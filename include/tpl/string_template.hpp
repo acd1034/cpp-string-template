@@ -29,14 +29,14 @@ namespace tpl {
     : std::true_type {};
 
   template <class BidirectionalIter, class Traits, class CharT, class Fn>
-  inline constexpr bool regex_replace_fn_constraint_v = std::conjunction_v<
+  inline constexpr bool regex_replace_fn_constraint = std::conjunction_v<
     std::is_invocable<Fn&, const std::match_results<BidirectionalIter>&>,
     is_std_basic_string_view_with_char_type<
       std::invoke_result_t<Fn&, const std::match_results<BidirectionalIter>&>, CharT>>;
 
   // clang-format off
   template <class OutputIter, class BidirectionalIter, class Traits, class CharT, class Fn>
-  requires regex_replace_fn_constraint_v<BidirectionalIter, Traits, CharT, Fn>
+  requires regex_replace_fn_constraint<BidirectionalIter, Traits, CharT, Fn>
   OutputIter
   // clang-format on
   regex_replace_fn(
@@ -66,8 +66,8 @@ namespace tpl {
   }
 
   template <class Traits, class CharT, class ST, class Fn>
-  requires regex_replace_fn_constraint_v<typename std::basic_string_view<CharT, ST>::iterator,
-                                         Traits, CharT, Fn>
+  requires regex_replace_fn_constraint<typename std::basic_string_view<CharT, ST>::iterator, Traits,
+                                       CharT, Fn>
     std::basic_string<CharT, ST>
     regex_replace_fn(
       std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re, Fn fn,
