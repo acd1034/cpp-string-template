@@ -72,27 +72,41 @@ namespace tpl {
 
   // substitute
 
+  template <class Map, class Key>
+  concept map_with_key_type = requires(Map& map, const Key& key) {
+    get<1>(*map.find(key));
+  };
+
+  template <class Map, class Key>
+  using map_mapped_t = decltype(get<1>(*std::declval<Map&>().find(std::declval<const Key&>())));
+
+  template <class Map, class Key, class U, class T = std::remove_cvref_t<map_mapped_t<Map, Key>>>
+  requires map_with_key_type<Map, Key> and std::convertible_to<U&&, T>
+    T at_or(Map& map, const Key& key, U&& v) {
+    auto i = map.find(key);
+    using std::end;
+    return i != end(map) ? get<1>(*i) : static_cast<T>(std::forward<U>(v));
+  }
+
   template <class CharT, class ST, class Map>
-  std::basic_string<CharT, ST> substitute(std::basic_string_view<CharT, ST> s, const Map& map) {
+  requires map_with_key_type<Map, std::basic_string_view<CharT, ST>> std::basic_string<CharT, ST>
+  substitute(std::basic_string_view<CharT, ST> s, const Map& map) {
     const std::basic_regex<CharT> re{R"(\$(?:(\w+)|\{(\w+)\}|(\$)|()))"};
     using Iter = typename std::basic_string_view<CharT, ST>::iterator;
-    const auto fn = [&map](const std::match_results<Iter>& mr) {
+    const auto fn = [&map](const std::match_results<Iter>& mr)
+      -> std::remove_cvref_t<map_mapped_t<Map, std::basic_string_view<CharT, ST>>> {
       if (mr[1].matched) {
-        std::basic_string_view<CharT, ST> key(mr[1].first, mr[1].length());
-        const auto i = map.find(key);
-        using std::end;
-        if (i == end(map)) return decltype(i->second)("NONE");
-        return i->second;
+        std::basic_string_view<CharT, ST> key(mr[1].first,
+                                              static_cast<std::size_t>(mr[1].length()));
+        return at_or(map, key, "NONE");
       } else if (mr[2].matched) {
-        std::basic_string_view<CharT, ST> key(mr[2].first, mr[2].length());
-        const auto i = map.find(key);
-        using std::end;
-        if (i == end(map)) return decltype(i->second)("NONE");
-        return i->second;
+        std::basic_string_view<CharT, ST> key(mr[2].first,
+                                              static_cast<std::size_t>(mr[2].length()));
+        return at_or(map, key, "NONE");
       } else if (mr[3].matched) {
-        return decltype(map.find(std::basic_string_view<CharT, ST>{})->second)("$");
+        return "$";
       }
-      return decltype(map.find(std::basic_string_view<CharT, ST>{})->second)("ERROR");
+      return "ERROR";
     };
     return regex_replace_fn(s, re, fn);
   }
