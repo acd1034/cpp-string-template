@@ -101,7 +101,7 @@ namespace tpl {
     return i != end(map) ? get<1>(*i) : static_cast<T>(std::forward<U>(v));
   }
 
-  inline constexpr std::string_view delimiter{"\\$"};
+  inline constexpr std::string_view delimiter{"$"};
   inline constexpr std::string_view idpattern{"([_a-zA-Z][_a-zA-Z0-9]*)"};
   inline constexpr std::string_view invalid{"()"};
   inline constexpr std::regex_constants::match_flag_type flags =
@@ -112,8 +112,8 @@ namespace tpl {
   substitute(std::basic_string_view<CharT, ST> s, const Map& map) {
     const std::basic_regex<CharT> re{[] {
       using namespace hidden_ops::string_view_ops;
-      const std::basic_string<CharT> delim{delimiter};
-      const std::basic_string<CharT> escape{"(" + delim + ")"};
+      const auto delim = std::basic_string<CharT>{"\\"} + delimiter;
+      const auto escape = "(" + delim + ")";
       return delim + "(?:" + idpattern + "|\\{" + idpattern + "\\}|" + escape + "|" + invalid + ")";
     }()};
     using Iter = typename std::basic_string_view<CharT, ST>::iterator;
