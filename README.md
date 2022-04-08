@@ -1,4 +1,4 @@
-# `iris`
+# String Template in C++
 <!--
 [![Linux build status](https://github.com/acd1034/iris/actions/workflows/linux-build.yml/badge.svg)](https://github.com/acd1034/iris/actions/workflows/linux-build.yml)
 [![macOS build status](https://github.com/acd1034/iris/actions/workflows/macos-build.yml/badge.svg)](https://github.com/acd1034/iris/actions/workflows/macos-build.yml)
@@ -9,10 +9,11 @@ Click [here](https://acd1034.github.io/iris/index.html) to see the HTML document
 ## Noteworthy Features
 
 ## Supported Compilers
+<!--
 The code will work on the following compilers:
 - GCC (latest)
 - Clang (latest)
 - Apple clang (version 11.0.0 or later)
+-->
 
 ## Library Dependencies
-- `<iris/core.hpp>` → depends on `blah blah blah`...
