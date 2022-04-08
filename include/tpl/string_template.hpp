@@ -107,40 +107,65 @@ namespace tpl {
     return i != end(map) ? get<1>(*i) : static_cast<T>(std::forward<U>(v));
   }
 
-  inline constexpr std::string_view delimiter{"$"};
-  inline constexpr std::string_view idpattern{"([_a-zA-Z][_a-zA-Z0-9]*)"};
-  inline constexpr std::string_view invalid{"()"};
-  inline constexpr std::regex_constants::match_flag_type flags =
-    std::regex_constants::match_default;
+  template <class CharT>
+  struct string_template {
+    using char_type = CharT;
 
-  // clang-format off
-  template <class CharT, class ST, class Map>
-  requires map_with_key_type<Map, std::basic_string_view<CharT, ST>>
-  std::basic_string<CharT, ST>
-  // clang-format on
-  substitute(std::basic_string_view<CharT, ST> s, const Map& map) {
-    const std::basic_regex<CharT> re{[] {
-      using namespace hidden_ops::string_view_ops;
-      const auto delim = std::basic_string<CharT>{"\\"} + delimiter;
-      const auto escape = "(" + delim + ")";
-      return delim + "(?:" + idpattern + "|\\{" + idpattern + "\\}|" + escape + "|" + invalid + ")";
-    }()};
-    using Iter = typename std::basic_string_view<CharT, ST>::iterator;
-    const auto fn = [&map](const std::match_results<Iter>& mr)
-      -> std::remove_cvref_t<map_mapped_t<Map, std::basic_string_view<CharT, ST>>> {
-      if (mr[1].matched) {
-        std::basic_string_view<CharT, ST> key(mr[1].first,
-                                              static_cast<std::size_t>(mr[1].length()));
-        return at_or(map, key, "NONE");
-      } else if (mr[2].matched) {
-        std::basic_string_view<CharT, ST> key(mr[2].first,
-                                              static_cast<std::size_t>(mr[2].length()));
-        return at_or(map, key, "NONE");
-      } else if (mr[3].matched) {
-        return delimiter;
-      }
-      return "ERROR";
-    };
-    return regex_replace_fn(s, re, fn, flags);
+    std::basic_string_view<CharT> delimiter{};
+    std::basic_string_view<CharT> idpattern{};
+    std::basic_string_view<CharT> braceidpattern{};
+    std::basic_string_view<CharT> invalid{"()"};
+    std::regex_constants::match_flag_type flags{std::regex_constants::match_default};
+
+    string_template() = default;
+    constexpr explicit string_template(std::basic_string_view<CharT> _delimiter,
+                                       std::basic_string_view<CharT> _idpattern)
+      : delimiter{_delimiter}, idpattern{_idpattern}, braceidpattern{_idpattern} {}
+    constexpr explicit string_template(std::basic_string_view<CharT> _delimiter,
+                                       std::basic_string_view<CharT> _idpattern,
+                                       std::basic_string_view<CharT> _braceidpattern)
+      : delimiter{_delimiter}, idpattern{_idpattern}, braceidpattern{_braceidpattern} {}
+    constexpr explicit string_template(std::basic_string_view<CharT> _delimiter,
+                                       std::basic_string_view<CharT> _idpattern,
+                                       std::basic_string_view<CharT> _braceidpattern,
+                                       std::regex_constants::match_flag_type _flags)
+      : delimiter{_delimiter}, idpattern{_idpattern}, braceidpattern{_braceidpattern}, flags{
+                                                                                         _flags} {}
+
+    // clang-format off
+    template <class ST, class Map>
+    requires map_with_key_type<Map, std::basic_string_view<CharT, ST>>
+    std::basic_string<CharT, ST>
+    // clang-format on
+    operator()(std::basic_string_view<CharT, ST> s, const Map& map) const {
+      const std::basic_regex<CharT> re{[this] {
+        using namespace hidden_ops::string_view_ops;
+        const auto delim = std::basic_string<CharT>{"\\"} + delimiter;
+        const auto escape = "(" + delim + ")";
+        return delim + "(?:" + idpattern + "|\\{" + braceidpattern + "\\}|" + escape + "|" + invalid
+               + ")";
+      }()};
+      using Iter = typename std::basic_string_view<CharT, ST>::iterator;
+      const auto fn = [this, &map](const std::match_results<Iter>& mr)
+        -> std::remove_cvref_t<map_mapped_t<Map, std::basic_string_view<CharT, ST>>> {
+        if (mr[1].matched) {
+          std::basic_string_view<CharT, ST> key(mr[1].first,
+                                                static_cast<std::size_t>(mr[1].length()));
+          return at_or(map, key, "NONE");
+        } else if (mr[2].matched) {
+          std::basic_string_view<CharT, ST> key(mr[2].first,
+                                                static_cast<std::size_t>(mr[2].length()));
+          return at_or(map, key, "NONE");
+        } else if (mr[3].matched) {
+          return delimiter;
+        }
+        return "ERROR";
+      };
+      return regex_replace_fn(s, re, fn, flags);
+    }
+  }; // struct string_template
+
+  inline namespace cpo {
+    inline constexpr string_template<char> substitute{"$", "([_a-zA-Z][_a-zA-Z0-9]*)"};
   }
 } // namespace tpl
