@@ -51,7 +51,7 @@ _deps
 
 # etc
 **/.vs/
-# **/.vscode/
+**/.vscode/
 **/.ccls-cache/
 **/.clangd/
 **/__pycache__/
