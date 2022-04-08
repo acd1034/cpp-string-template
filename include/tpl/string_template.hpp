@@ -72,6 +72,15 @@ namespace tpl {
 
   // substitute
 
+  namespace hidden_ops::inline string_view_ops {
+    template <class CharT, class Traits, class Allocator>
+    std::basic_string<CharT, Traits, Allocator> operator+(
+      std::basic_string<CharT, Traits, Allocator>&& lhs,
+      std::basic_string_view<CharT, Traits> rhs) {
+      return std::move(lhs.append(rhs));
+    }
+  } // namespace hidden_ops::inline string_view_ops
+
   template <class Map, class Key>
   concept map_with_key_type = requires(Map& map, const Key& key) {
     get<1>(*map.find(key));
@@ -88,10 +97,21 @@ namespace tpl {
     return i != end(map) ? get<1>(*i) : static_cast<T>(std::forward<U>(v));
   }
 
+  inline constexpr std::string_view delimiter{"\\$"};
+  inline constexpr std::string_view idpattern{"([_a-zA-Z][_a-zA-Z0-9]*)"};
+  inline constexpr std::string_view invalid{"()"};
+  inline constexpr std::regex_constants::match_flag_type flags =
+    std::regex_constants::match_default;
+
   template <class CharT, class ST, class Map>
   requires map_with_key_type<Map, std::basic_string_view<CharT, ST>> std::basic_string<CharT, ST>
   substitute(std::basic_string_view<CharT, ST> s, const Map& map) {
-    const std::basic_regex<CharT> re{R"(\$(?:(\w+)|\{(\w+)\}|(\$)|()))"};
+    const std::basic_regex<CharT> re{[] {
+      using namespace hidden_ops::string_view_ops;
+      const std::basic_string<CharT> delim{delimiter};
+      const std::basic_string<CharT> escape{"(" + delim + ")"};
+      return delim + "(?:" + idpattern + "|\\{" + idpattern + "\\}|" + escape + "|" + invalid + ")";
+    }()};
     using Iter = typename std::basic_string_view<CharT, ST>::iterator;
     const auto fn = [&map](const std::match_results<Iter>& mr)
       -> std::remove_cvref_t<map_mapped_t<Map, std::basic_string_view<CharT, ST>>> {
@@ -104,10 +124,10 @@ namespace tpl {
                                               static_cast<std::size_t>(mr[2].length()));
         return at_or(map, key, "NONE");
       } else if (mr[3].matched) {
-        return "$";
+        return delimiter;
       }
       return "ERROR";
     };
-    return regex_replace_fn(s, re, fn);
+    return regex_replace_fn(s, re, fn, flags);
   }
 } // namespace tpl
