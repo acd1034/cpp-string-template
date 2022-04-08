@@ -76,7 +76,7 @@ namespace tpl {
   std::basic_string<CharT, ST> substitute(std::basic_string_view<CharT, ST> s, const Map& map) {
     const std::basic_regex<CharT> re{R"(\$(?:(\w+)|\{(\w+)\}|(\$)|()))"};
     using Iter = typename std::basic_string_view<CharT, ST>::iterator;
-    const auto fn = [&map]<class Allocator>(const std::match_results<Iter, Allocator>& mr) {
+    const auto fn = [&map](const std::match_results<Iter>& mr) {
       if (mr[1].matched) {
         std::basic_string_view<CharT, ST> key(mr[1].first, mr[1].length());
         const auto i = map.find(key);
