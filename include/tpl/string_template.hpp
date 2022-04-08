@@ -13,7 +13,8 @@ namespace tpl {
   // regex_replace_fn
 
   template <class BidirectionalIter, class Allocator, class OutputIter, class ST>
-  OutputIter regex_format(
+  OutputIter
+  regex_format(
     const std::match_results<BidirectionalIter, Allocator>& mr, OutputIter out,
     std::basic_string_view<typename std::iterator_traits<BidirectionalIter>::value_type, ST> fmt,
     std::regex_constants::match_flag_type flags = std::regex_constants::format_default) {
@@ -34,16 +35,17 @@ namespace tpl {
       std::invoke_result_t<Fn&, const std::match_results<BidirectionalIter>&>, CharT>>;
 
   template <class OutputIter, class BidirectionalIter, class Traits, class CharT, class Fn>
-  requires regex_replace_fn_constraint_v<BidirectionalIter, Traits, CharT, Fn>
-    OutputIter regex_replace_fn(
-      OutputIter out, BidirectionalIter first, BidirectionalIter last,
-      const std::basic_regex<CharT, Traits>& re, Fn fn,
-      std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+  requires regex_replace_fn_constraint_v<BidirectionalIter, Traits, CharT, Fn> OutputIter
+  regex_replace_fn(
+    OutputIter out, BidirectionalIter first, BidirectionalIter last,
+    const std::basic_regex<CharT, Traits>& re, Fn fn,
+    std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
     using Iter = std::regex_iterator<BidirectionalIter, CharT, Traits>;
     Iter i(first, last, re, flags);
     Iter eof;
     if (i == eof) {
-      if (!(flags & std::regex_constants::format_no_copy)) out = std::copy(first, last, out);
+      if (!(flags & std::regex_constants::format_no_copy))
+        out = std::copy(first, last, out);
     } else {
       std::sub_match<BidirectionalIter> lm;
       for (; i != eof; ++i) {
@@ -51,7 +53,8 @@ namespace tpl {
           out = std::copy(i->prefix().first, i->prefix().second, out);
         out = regex_format(*i, out, std::invoke(fn, *i), flags);
         lm = i->suffix();
-        if (flags & std::regex_constants::format_first_only) break;
+        if (flags & std::regex_constants::format_first_only)
+          break;
       }
       if (!(flags & std::regex_constants::format_no_copy))
         out = std::copy(lm.first, lm.second, out);
@@ -62,7 +65,8 @@ namespace tpl {
   template <class Traits, class CharT, class ST, class Fn>
   requires regex_replace_fn_constraint_v<typename std::basic_string_view<CharT, ST>::iterator,
                                          Traits, CharT, Fn>
-    std::basic_string<CharT, ST> regex_replace_fn(
+    std::basic_string<CharT, ST>
+    regex_replace_fn(
       std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re, Fn fn,
       std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
     std::basic_string<CharT, ST> r;
@@ -90,8 +94,8 @@ namespace tpl {
   using map_mapped_t = decltype(get<1>(*std::declval<Map&>().find(std::declval<const Key&>())));
 
   template <class Map, class Key, class U, class T = std::remove_cvref_t<map_mapped_t<Map, Key>>>
-  requires map_with_key_type<Map, Key> and std::convertible_to<U&&, T>
-    T at_or(Map& map, const Key& key, U&& v) {
+  requires map_with_key_type<Map, Key> and std::convertible_to<U&&, T> T
+  at_or(Map& map, const Key& key, U&& v) {
     auto i = map.find(key);
     using std::end;
     return i != end(map) ? get<1>(*i) : static_cast<T>(std::forward<U>(v));
