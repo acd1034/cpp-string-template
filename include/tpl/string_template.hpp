@@ -34,8 +34,11 @@ namespace tpl {
     is_std_basic_string_view_with_char_type<
       std::invoke_result_t<Fn&, const std::match_results<BidirectionalIter>&>, CharT>>;
 
+  // clang-format off
   template <class OutputIter, class BidirectionalIter, class Traits, class CharT, class Fn>
-  requires regex_replace_fn_constraint_v<BidirectionalIter, Traits, CharT, Fn> OutputIter
+  requires regex_replace_fn_constraint_v<BidirectionalIter, Traits, CharT, Fn>
+  OutputIter
+  // clang-format on
   regex_replace_fn(
     OutputIter out, BidirectionalIter first, BidirectionalIter last,
     const std::basic_regex<CharT, Traits>& re, Fn fn,
@@ -93,8 +96,11 @@ namespace tpl {
   template <class Map, class Key>
   using map_mapped_t = decltype(get<1>(*std::declval<Map&>().find(std::declval<const Key&>())));
 
+  // clang-format off
   template <class Map, class Key, class U, class T = std::remove_cvref_t<map_mapped_t<Map, Key>>>
-  requires map_with_key_type<Map, Key> and std::convertible_to<U&&, T> T
+  requires map_with_key_type<Map, Key> and std::convertible_to<U&&, T>
+  T
+  // clang-format on
   at_or(Map& map, const Key& key, U&& v) {
     auto i = map.find(key);
     using std::end;
@@ -107,8 +113,11 @@ namespace tpl {
   inline constexpr std::regex_constants::match_flag_type flags =
     std::regex_constants::match_default;
 
+  // clang-format off
   template <class CharT, class ST, class Map>
-  requires map_with_key_type<Map, std::basic_string_view<CharT, ST>> std::basic_string<CharT, ST>
+  requires map_with_key_type<Map, std::basic_string_view<CharT, ST>>
+  std::basic_string<CharT, ST>
+  // clang-format on
   substitute(std::basic_string_view<CharT, ST> s, const Map& map) {
     const std::basic_regex<CharT> re{[] {
       using namespace hidden_ops::string_view_ops;
