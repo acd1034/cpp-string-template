@@ -1,0 +1,16 @@
+/* https://stackoverflow.com/questions/16748223/how-do-i-change-the-code-font-size-in-doxygen */
+a.el {
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+
+b {
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+
+code {
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+
+div.line {
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}

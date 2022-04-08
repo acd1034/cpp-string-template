@@ -1,0 +1,130 @@
+{
+  // https://go.microsoft.com/fwlink/?LinkId=733558
+  // https://code.visualstudio.com/docs/editor/variables-reference
+  "tasks": [
+    { // Clang Debug Run
+      "label": "Clang Debug Run",
+      "command": "clang++",
+      "args": [
+        "${file}",
+        "-g",
+        "-O0",
+        "-std=c++2a",
+        "-Wall",
+        "-Wextra",
+        "-pedantic",
+        "-I${workspaceFolder}/include",
+        "-I/Users/ryo/vcpkg/installed/x64-osx/include",
+        "-L/Users/ryo/vcpkg/installed/x64-osx/lib",
+        "&&",
+        "./a.out",
+      ],
+    },
+    { // GCC Debug Run
+      "label": "GCC Debug Run",
+      "command": "g++-11",
+      "args": [
+        "${file}",
+        "-g",
+        "-O0",
+        "-std=c++20",
+        "-Wall",
+        "-Wextra",
+        "-pedantic",
+        "-I${workspaceFolder}/include",
+        "-I/Users/ryo/vcpkg/installed/x64-osx/include",
+        "-L/Users/ryo/vcpkg/installed/x64-osx/lib",
+        "&&",
+        "./a.out",
+      ],
+    },
+    { // GCC Release Run
+      "label": "GCC Release Run",
+      "command": "g++-11",
+      "args": [
+        "${file}",
+        "-O3",
+        "-DNDEBUG",
+        "-std=c++20",
+        "-Wall",
+        "-Wextra",
+        "-pedantic",
+        "-I${workspaceFolder}/include",
+        "-I/Users/ryo/vcpkg/installed/x64-osx/include",
+        "-L/Users/ryo/vcpkg/installed/x64-osx/lib",
+        // additional
+        "-lblas",
+        "-lgsl",
+        "-lgslcblas",
+        "-llapack",
+        "-lm",
+        "-march=native",
+        "-mfpmath=both",
+        "-mtune=native",
+        "&&",
+        "echo",
+        "Running...",
+        "&&",
+        "./a.out"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+    },
+    { // Clean
+      "label": "Clean",
+      "command": "rm -r *",
+      "group": "none",
+    },
+    { // Doxygen
+      "label": "Doxygen",
+      "command": "doxygen Doxyfile && open ./html/index.html",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+    },
+    { // Format
+      "label": "clang-format",
+      "command": "clang-format -i -style=file ${file}",
+      "group": "none",
+    },
+    { // Python
+      "label": "Python",
+      "command": "/Users/ryo/.pyenv/shims/python3",
+      // "command": "${config:python.pythonPath}",
+      "args": [
+        "${file}",
+        "&&",
+        "open",
+        "${fileDirname}/${fileBasenameNoExtension}.pdf"
+      ],
+      "options": {
+        "cwd": "${fileDirname}"
+      }
+    },
+    { // isort
+      "label": "isort",
+      "command": "${config:python.sortImports.path} ${file}",
+      "group": "none",
+    },
+    { // Open Externally
+      "label": "Open Externally",
+      "command": "open ${fileDirname}/${fileBasenameNoExtension}.pdf",
+      "group": "none",
+    },
+  ],
+  "type": "shell",
+  "group": "build",
+  "options": {
+    "cwd": "${workspaceFolder}/build"
+  },
+  "presentation": {
+    "clear": true,
+    "echo": false,
+    "reveal": "always",
+    "showReuseMessage": true,
+  },
+  "problemMatcher": "$gcc",
+  "version": "2.0.0",
+}
