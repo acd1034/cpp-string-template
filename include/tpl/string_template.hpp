@@ -81,9 +81,9 @@ namespace tpl {
 
   namespace hidden_ops::inline string_view_ops {
     template <class CharT, class Traits, class Allocator>
-    std::basic_string<CharT, Traits, Allocator> operator+(
-      std::basic_string<CharT, Traits, Allocator>&& lhs,
-      std::basic_string_view<CharT, Traits> rhs) {
+    std::basic_string<CharT, Traits, Allocator>
+    operator+(std::basic_string<CharT, Traits, Allocator>&& lhs,
+              std::basic_string_view<CharT, Traits> rhs) {
       return std::move(lhs.append(rhs));
     }
   } // namespace hidden_ops::inline string_view_ops
@@ -114,7 +114,7 @@ namespace tpl {
     std::basic_string_view<CharT> delimiter{};
     std::basic_string_view<CharT> idpattern{};
     std::basic_string_view<CharT> braceidpattern{};
-    std::basic_string_view<CharT> invalid{"()"};
+    const std::basic_string_view<CharT> invalid{"()"};
     std::regex_constants::match_flag_type flags{std::regex_constants::match_default};
 
     string_template() = default;
