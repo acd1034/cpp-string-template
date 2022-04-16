@@ -2,6 +2,7 @@
 #include <algorithm>  // std::copy
 #include <functional> // std::invoke
 #include <iterator>   // std::iterator_traits, std::back_inserter
+#include <ranges>     // std::ranges::subrange
 #include <regex>
 #include <string>
 #include <string_view>
@@ -19,6 +20,17 @@ namespace strtpl::regex {
     std::basic_string_view<typename std::iterator_traits<BiIter>::value_type, ST> fmt,
     std::regex_constants::match_flag_type flags = std::regex_constants::format_default) {
     return mr.format(out, fmt.data(), fmt.data() + fmt.size(), flags);
+  }
+
+  // regex_range
+
+  template <class Traits, class CharT, class ST,
+            class Iter = std::regex_iterator<typename std::basic_string_view<CharT, ST>::iterator,
+                                             CharT, Traits>>
+  std::ranges::subrange<Iter>
+  regex_range(std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re,
+              std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+    return {Iter(s.begin(), s.end(), re, flags), Iter()};
   }
 
   // regex_replace_fn
