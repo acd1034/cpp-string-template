@@ -22,6 +22,17 @@ namespace strtpl::regex {
     return mr.format(out, fmt.data(), fmt.data() + fmt.size(), flags);
   }
 
+  template <class BiIter, class Allocator, class ST,
+            class CharT = typename std::iterator_traits<BiIter>::value_type>
+  std::basic_string<CharT, ST>
+  match_results_format(
+    const std::match_results<BiIter, Allocator>& mr, std::basic_string_view<CharT, ST> fmt,
+    std::regex_constants::match_flag_type flags = std::regex_constants::format_default) {
+    std::basic_string<CharT, ST> r;
+    match_results_format(mr, std::back_inserter(r), fmt, flags);
+    return r;
+  }
+
   // regex_range
 
   template <class Traits, class CharT, class ST,
