@@ -8,7 +8,7 @@
 #include <type_traits> // std::remove_cvref_t
 #include <utility>
 
-namespace tpl {
+namespace strtpl {
 
   // regex_replace_fn
 
@@ -81,9 +81,9 @@ namespace tpl {
 
   namespace hidden_ops::inline string_view_ops {
     template <class CharT, class Traits, class Allocator>
-    std::basic_string<CharT, Traits, Allocator>
-    operator+(std::basic_string<CharT, Traits, Allocator>&& lhs,
-              std::basic_string_view<CharT, Traits> rhs) {
+    std::basic_string<CharT, Traits, Allocator> operator+(
+      std::basic_string<CharT, Traits, Allocator>&& lhs,
+      std::basic_string_view<CharT, Traits> rhs) {
       return std::move(lhs.append(rhs));
     }
   } // namespace hidden_ops::inline string_view_ops
@@ -168,4 +168,4 @@ namespace tpl {
   inline namespace cpo {
     inline constexpr string_template<char> substitute{"$", "([_a-zA-Z][_a-zA-Z0-9]*)"};
   }
-} // namespace tpl
+} // namespace strtpl
