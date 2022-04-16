@@ -49,7 +49,7 @@ namespace strtpl::regex {
   template <class T, class CharT>
   struct is_std_basic_string_view_with_char_type : std::false_type {};
 
-  template <class ST, class CharT>
+  template <class CharT, class ST>
   struct is_std_basic_string_view_with_char_type<std::basic_string_view<CharT, ST>, CharT>
     : std::true_type {};
 
