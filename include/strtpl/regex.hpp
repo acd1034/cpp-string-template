@@ -1,10 +1,9 @@
 /// @file regex.hpp
-#include <algorithm>  // std::copy
+#include <algorithm>  // std::ranges::copy, std::copy
 #include <functional> // std::invoke
 #include <iterator>   // std::iterator_traits, std::back_inserter
 #include <ranges>     // std::ranges::subrange
 #include <regex>
-#include <string>
 #include <string_view>
 #include <type_traits> // std::remove_cvref_t
 #include <utility>
@@ -53,51 +52,50 @@ namespace strtpl::regex {
   struct is_std_basic_string_view_with_char_type<std::basic_string_view<CharT, ST>, CharT>
     : std::true_type {};
 
-  template <class BiIter, class Traits, class CharT, class Fn>
+  template <class CharT, class ST, class Fn,
+            class BiIter = typename std::basic_string_view<CharT, ST>::iterator>
   inline constexpr bool regex_replace_fn_constraint =
     std::conjunction_v<std::is_invocable<Fn&, const std::match_results<BiIter>&>,
                        is_std_basic_string_view_with_char_type<
                          std::invoke_result_t<Fn&, const std::match_results<BiIter>&>, CharT>>;
 
   // clang-format off
-  template <class OutputIter, class BiIter, class Traits, class CharT, class Fn>
-  requires regex_replace_fn_constraint<BiIter, Traits, CharT, Fn>
+  template <class OutputIter, class Traits, class CharT, class ST, class Fn>
+  requires regex_replace_fn_constraint<CharT, ST, Fn>
   OutputIter
   // clang-format on
   regex_replace_fn(
-    OutputIter out, BiIter first, BiIter last, const std::basic_regex<CharT, Traits>& re, Fn fn,
-    std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
-    using Iter = std::regex_iterator<BiIter, CharT, Traits>;
-    Iter i(first, last, re, flags);
-    Iter eof;
-    if (i == eof) {
-      if (!(flags & std::regex_constants::format_no_copy))
-        out = std::copy(first, last, out);
+    OutputIter out, std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re,
+    Fn fn, std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+    auto r = regex_range(s, re, flags);
+    const bool format_copy = !(flags & std::regex_constants::format_no_copy);
+    if (r.empty()) {
+      if (format_copy)
+        out = std::ranges::copy(s, out).out;
     } else {
-      std::sub_match<BiIter> lm;
-      for (; i != eof; ++i) {
-        if (!(flags & std::regex_constants::format_no_copy))
-          out = std::copy(i->prefix().first, i->prefix().second, out);
-        out = match_results_format(*i, out, std::invoke(fn, *i), flags);
-        lm = i->suffix();
-        if (flags & std::regex_constants::format_first_only)
+      std::remove_cvref_t<decltype(r.begin()->suffix())> last;
+      const bool format_first_only = flags & std::regex_constants::format_first_only;
+      for (const auto& mr : r) {
+        if (format_copy)
+          out = std::copy(mr.prefix().first, mr.prefix().second, out);
+        out = match_results_format(mr, out, std::invoke(fn, mr), flags);
+        last = mr.suffix();
+        if (format_first_only)
           break;
       }
-      if (!(flags & std::regex_constants::format_no_copy))
-        out = std::copy(lm.first, lm.second, out);
+      if (format_copy)
+        out = std::copy(last.first, last.second, out);
     }
     return out;
   }
 
   template <class Traits, class CharT, class ST, class Fn>
-  requires regex_replace_fn_constraint<typename std::basic_string_view<CharT, ST>::iterator, Traits,
-                                       CharT, Fn>
-    std::basic_string<CharT, ST>
-    regex_replace_fn(
-      std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re, Fn fn,
-      std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+  requires regex_replace_fn_constraint<CharT, ST, Fn> std::basic_string<CharT, ST>
+  regex_replace_fn(
+    std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re, Fn fn,
+    std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
     std::basic_string<CharT, ST> r;
-    regex_replace_fn(std::back_inserter(r), s.begin(), s.end(), re, fn, flags);
+    regex_replace_fn(std::back_inserter(r), s, re, fn, flags);
     return r;
   }
 } // namespace strtpl::regex
