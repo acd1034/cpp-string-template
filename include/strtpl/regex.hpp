@@ -55,7 +55,7 @@ namespace strtpl::regex {
       for (; i != eof; ++i) {
         if (!(flags & std::regex_constants::format_no_copy))
           out = std::copy(i->prefix().first, i->prefix().second, out);
-        out = regex_format(*i, out, std::invoke(fn, *i), flags);
+        out = match_results_format(*i, out, std::invoke(fn, *i), flags);
         lm = i->suffix();
         if (flags & std::regex_constants::format_first_only)
           break;
