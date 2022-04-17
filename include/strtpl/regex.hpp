@@ -1,8 +1,8 @@
 /// @file regex.hpp
-#include <algorithm>  // std::ranges::copy, std::copy
+#include <algorithm>  // std::copy
 #include <functional> // std::invoke
 #include <iterator>   // std::iterator_traits, std::back_inserter
-#include <ranges>     // std::ranges::subrange
+#include <ranges> // std::ranges::subrange, std::views::join, std::views::transform, std::views::take
 #include <regex>
 #include <string_view>
 #include <type_traits> // std::remove_cvref_t
@@ -72,7 +72,7 @@ namespace strtpl::regex {
     const bool format_copy = !(flags & std::regex_constants::format_no_copy);
     if (r.empty()) {
       if (format_copy)
-        out = std::ranges::copy(s, out).out;
+        out = std::copy(s.begin(), s.end(), out);
     } else {
       const bool format_first_only = flags & std::regex_constants::format_first_only;
       for (const auto& [mr, last] : r) {
