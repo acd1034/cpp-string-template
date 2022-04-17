@@ -79,10 +79,10 @@ namespace strtpl {
     using Parent = std::conditional_t<Const, const trailing_view, trailing_view>;
     using Base = std::conditional_t<Const, const View, View>;
 
+    [[no_unique_address]] Parent* parent_ = nullptr;
     [[no_unique_address]] std::ranges::iterator_t<Base> current_ = std::ranges::iterator_t<Base>();
     [[no_unique_address]] std::ranges::iterator_t<Base> next_ = std::ranges::iterator_t<Base>();
     std::ranges::range_difference_t<Base> ncount_ = 0;
-    [[no_unique_address]] Parent* parent_ = nullptr;
 
     constexpr bool
     accessible() const noexcept {
@@ -105,13 +105,13 @@ namespace strtpl {
     = default;
     // clang-format off
     constexpr iterator(Parent& parent)
-      : current_(std::ranges::begin(parent.base())),
+      : parent_(std::addressof(parent)),
+        current_(std::ranges::begin(parent.base())),
         next_([&parent] {
           if (std::ranges::empty(parent.base()))
             return std::ranges::begin(parent.base());
           return std::ranges::next(std::ranges::begin(parent.base()));
-        }()),
-        parent_(std::addressof(parent)) {}
+        }()) {}
     // clang-format on
 
     constexpr const std::ranges::iterator_t<Base>&
