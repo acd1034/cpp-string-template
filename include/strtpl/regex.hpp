@@ -105,3 +105,21 @@ namespace strtpl::regex {
     return r;
   }
 } // namespace strtpl::regex
+
+namespace strtpl::regex::v2 {
+
+  // regex_split
+
+  template <class Traits, class CharT, class ST>
+  auto
+  regex_split(std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re,
+              std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+    constexpr auto fn = [](const auto& x) {
+      const auto& [mr, last] = x;
+      if (last)
+        return std::ranges::subrange(mr.suffix().first, mr.suffix().second);
+      return std::ranges::subrange(mr.prefix().first, mr.prefix().second);
+    };
+    return trailing_view(regex_range(s, re, flags), 2) | std::views::transform(fn);
+  }
+} // namespace strtpl::regex::v2
