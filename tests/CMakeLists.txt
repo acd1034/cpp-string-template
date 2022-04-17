@@ -70,3 +70,4 @@ FetchContent_MakeAvailable(Catch2)
 
 add_subdirectory(main)
 add_subdirectory(regex)
+add_subdirectory(trailing_view)
