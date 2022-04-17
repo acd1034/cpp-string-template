@@ -92,8 +92,11 @@ namespace strtpl::regex {
     return out;
   }
 
+  // clang-format off
   template <class Traits, class CharT, class ST, class Fn>
-  requires regex_replace_fn_constraint<CharT, ST, Fn> std::basic_string<CharT, ST>
+  requires regex_replace_fn_constraint<CharT, ST, Fn>
+  std::basic_string<CharT, ST>
+  // clang-format on
   regex_replace_fn(
     std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re, Fn fn,
     std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
