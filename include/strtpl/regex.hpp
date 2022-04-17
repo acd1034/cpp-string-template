@@ -109,6 +109,7 @@ namespace strtpl::regex {
 namespace strtpl::regex::v2 {
 
   // another version of regex_replace_fn
+  // match がないときは empty view を返す
 
   /* // clang-format off
   template <class Traits, class CharT, class ST, class Fn>
@@ -133,17 +134,34 @@ namespace strtpl::regex::v2 {
   } */
 
   // regex_split
+  // match がないときは empty view を返す
 
   template <class Traits, class CharT, class ST>
   auto
   regex_split(std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re,
+              bool keepend = false,
               std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
-    constexpr auto fn = [](const auto& x) {
+    const auto fn = [keepend](const auto& x) {
       const auto& [mr, last] = x;
       if (last)
         return std::ranges::subrange(mr.suffix().first, mr.suffix().second);
-      return std::ranges::subrange(mr.prefix().first, mr.prefix().second);
+      return std::ranges::subrange(mr.prefix().first, keepend ? mr[0].second : mr.prefix().second);
     };
     return trailing_view(regex_range(s, re, flags), 2) | std::views::transform(fn);
+  }
+
+  template <class Traits, class CharT, class ST>
+  auto
+  regex_split_n(std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re,
+                std::size_t n, bool keepend = false,
+                std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+    const auto fn = [keepend](const auto& x) {
+      const auto& [mr, last] = x;
+      if (last)
+        return std::ranges::subrange(mr.suffix().first, mr.suffix().second);
+      return std::ranges::subrange(mr.prefix().first, keepend ? mr[0].second : mr.prefix().second);
+    };
+    return trailing_view(regex_range(s, re, flags) | std::views::take(n), 2)
+           | std::views::transform(fn);
   }
 } // namespace strtpl::regex::v2
