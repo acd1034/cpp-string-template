@@ -12,6 +12,7 @@ namespace strtpl {
     [[no_unique_address]] View base_ = View();
     std::ranges::range_difference_t<View> count_ = 0;
 
+    template <bool Const>
     class iterator;
 
   public:
@@ -37,13 +38,17 @@ namespace strtpl {
       return count_;
     }
 
-    constexpr iterator
+    constexpr iterator<false>
     begin() {
+      return {*this};
+    }
+    constexpr iterator<true>
+    begin() const requires std::ranges::input_range<const View> {
       return {*this};
     }
 
     constexpr auto
-    end() {
+    end() const {
       return std::default_sentinel;
     }
   };
@@ -67,12 +72,20 @@ namespace strtpl {
 
   template <std::ranges::input_range View>
   requires std::ranges::view<View>
-  struct trailing_view<View>::iterator : trailing_iterator_category<View> {
+  template <bool Const>
+  struct trailing_view<View>::iterator
+    : trailing_iterator_category<std::conditional_t<Const, const View, View>> {
   private:
-    [[no_unique_address]] std::ranges::iterator_t<View> current_ = std::ranges::iterator_t<View>();
-    [[no_unique_address]] std::ranges::iterator_t<View> next_ = std::ranges::iterator_t<View>();
-    std::ranges::range_difference_t<View> ncount_ = 0;
-    [[no_unique_address]] trailing_view* parent_ = nullptr;
+    using Parent = std::conditional_t<Const, const trailing_view, trailing_view>;
+    using Base = std::conditional_t<Const, const View, View>;
+    template <class T>
+    using FirstType = std::conditional_t<Const and std::is_lvalue_reference_v<T>,
+                                         std::add_const_t<std::remove_reference_t<T>>&, T>;
+
+    [[no_unique_address]] Parent* parent_ = nullptr;
+    [[no_unique_address]] std::ranges::iterator_t<Base> current_ = std::ranges::iterator_t<Base>();
+    [[no_unique_address]] std::ranges::iterator_t<Base> next_ = std::ranges::iterator_t<Base>();
+    std::ranges::range_difference_t<Base> ncount_ = 0;
 
     constexpr bool
     accessible() const noexcept {
@@ -83,41 +96,42 @@ namespace strtpl {
     // using iterator_category = inherited;
     // clang-format off
     using iterator_concept =
-      std::conditional_t<std::ranges::bidirectional_range<View>, std::bidirectional_iterator_tag,
-      std::conditional_t<std::ranges::forward_range<View>,       std::forward_iterator_tag,
+      std::conditional_t<std::ranges::bidirectional_range<Base>, std::bidirectional_iterator_tag,
+      std::conditional_t<std::ranges::forward_range<Base>,       std::forward_iterator_tag,
       /* else */                                                 std::input_iterator_tag>>;
     // clang-format on
-    using difference_type = std::ranges::range_difference_t<View>;
-    using value_type =
-      std::pair<std::ranges::range_reference_t<View>, std::ranges::range_difference_t<View>>;
+    using difference_type = std::ranges::range_difference_t<Base>;
+    using value_type = std::pair<FirstType<std::ranges::range_reference_t<Base>>,
+                                 std::ranges::range_difference_t<Base>>;
 
-    iterator() requires std::default_initializable<std::ranges::iterator_t<View>>
+    iterator() requires std::default_initializable<std::ranges::iterator_t<Base>>
     = default;
     // clang-format off
-    constexpr iterator(trailing_view& parent)
-      : current_(std::ranges::begin(parent.base())),
+    constexpr iterator(Parent& parent)
+      : parent_(std::addressof(parent)),
+        current_(std::ranges::begin(parent.base())),
         next_([&parent] {
           if (std::ranges::empty(parent.base()))
             return std::ranges::begin(parent.base());
           return std::ranges::next(std::ranges::begin(parent.base()));
-        }()),
-        parent_(std::addressof(parent)) {}
+        }()) {}
     // clang-format on
 
-    constexpr const std::ranges::iterator_t<View>&
+    constexpr const std::ranges::iterator_t<Base>&
     base() const& noexcept {
       return current_;
     }
-    constexpr std::ranges::iterator_t<View>
+    constexpr std::ranges::iterator_t<Base>
     base() && {
       return std::move(current_);
     }
-    constexpr std::ranges::range_difference_t<View>
+    constexpr std::ranges::range_difference_t<Base>
     count() const noexcept {
       return ncount_;
     }
 
-    constexpr std::pair<std::ranges::range_reference_t<View>, std::ranges::range_difference_t<View>>
+    constexpr std::pair<FirstType<std::ranges::range_reference_t<Base>>,
+                        std::ranges::range_difference_t<Base>>
     operator*() const {
       assert(accessible());
       return {*current_, ncount_};
@@ -139,7 +153,7 @@ namespace strtpl {
       ++*this;
     }
     constexpr iterator
-    operator++(int) requires std::ranges::forward_range<View> {
+    operator++(int) requires std::ranges::forward_range<Base> {
       assert(accessible());
       auto tmp = *this;
       ++*this;
@@ -147,7 +161,7 @@ namespace strtpl {
     }
 
     constexpr iterator&
-    operator--() requires std::ranges::bidirectional_range<View> {
+    operator--() requires std::ranges::bidirectional_range<Base> {
       if (ncount_ == 0) {
         next_ = current_--;
       } else {
@@ -156,7 +170,7 @@ namespace strtpl {
       return *this;
     }
     constexpr iterator
-    operator--(int) requires std::ranges::forward_range<View> {
+    operator--(int) requires std::ranges::forward_range<Base> {
       auto tmp = *this;
       --*this;
       return tmp;
@@ -164,17 +178,17 @@ namespace strtpl {
 
     friend constexpr bool
     operator==(const iterator& x,
-               const iterator& y) requires std::equality_comparable<std::ranges::iterator_t<View>> {
+               const iterator& y) requires std::equality_comparable<std::ranges::iterator_t<Base>> {
       return x.current_ == y.current_ and x.ncount_ == y.ncount_;
     }
     friend constexpr bool
     operator==(const iterator& x, std::default_sentinel_t) requires
-      std::equality_comparable<std::ranges::iterator_t<View>> {
+      std::equality_comparable<std::ranges::iterator_t<Base>> {
       return x.next_ == std::ranges::end(x.parent_->base()) and x.ncount_ == x.parent_->count();
     }
 
-    friend constexpr std::pair<std::ranges::range_rvalue_reference_t<View>,
-                               std::ranges::range_difference_t<View>>
+    friend constexpr std::pair<std::ranges::range_rvalue_reference_t<Base>,
+                               std::ranges::range_difference_t<Base>>
     iter_move(const iterator& x) noexcept(noexcept(std::ranges::iter_move(x.current_))) {
       assert(x.accessible());
       return {std::ranges::iter_move(x.current_), x.ncount_};
