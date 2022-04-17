@@ -6,7 +6,9 @@
 #include <strtpl/trailing_view.hpp>
 
 TEST_CASE("trailing_view", "[trailing_view]") {
-  constexpr auto access = [](auto&& x) { return get<0>(std::forward<decltype(x)>(x)); };
+  constexpr auto access = [](auto&& x) -> decltype(auto) {
+    return get<0>(std::forward<decltype(x)>(x));
+  };
   { // static_assert
     std::vector<int> v;
     auto tv = strtpl::trailing_view{v, 0};
@@ -18,6 +20,46 @@ TEST_CASE("trailing_view", "[trailing_view]") {
     static_assert(std::ranges::forward_range<View>);
     static_assert(std::ranges::bidirectional_range<View>);
     // static_assert(std::ranges::random_access_range<View>); // currently not supported
+    static_assert(std::assignable_from<decltype(access(*std::ranges::begin(tv))), int>);
+  }
+  {
+    std::ranges::iota_view v{0};
+    auto tv = strtpl::trailing_view{v, 0};
+    using View = std::remove_cv_t<decltype(tv)>;
+    using It = std::ranges::iterator_t<View>;
+    static_assert(std::input_or_output_iterator<It>);
+    static_assert(std::indirectly_readable<It>);
+    static_assert(std::ranges::input_range<View>);
+    static_assert(std::ranges::forward_range<View>);
+    static_assert(std::ranges::bidirectional_range<View>);
+    // static_assert(std::ranges::random_access_range<View>); // currently not supported
+    static_assert(not std::assignable_from<decltype(access(*std::ranges::begin(tv))), int>);
+  }
+  {
+    const std::vector<int> v;
+    auto tv = strtpl::trailing_view{v, 0};
+    using View = std::remove_cv_t<decltype(tv)>;
+    using It = std::ranges::iterator_t<View>;
+    static_assert(std::input_or_output_iterator<It>);
+    static_assert(std::indirectly_readable<It>);
+    static_assert(std::ranges::input_range<View>);
+    static_assert(std::ranges::forward_range<View>);
+    static_assert(std::ranges::bidirectional_range<View>);
+    // static_assert(std::ranges::random_access_range<View>); // currently not supported
+    static_assert(not std::assignable_from<decltype(access(*std::ranges::begin(tv))), int>);
+  }
+  {
+    const std::ranges::iota_view v{0};
+    auto tv = strtpl::trailing_view{v, 0};
+    using View = std::remove_cv_t<decltype(tv)>;
+    using It = std::ranges::iterator_t<View>;
+    static_assert(std::input_or_output_iterator<It>);
+    static_assert(std::indirectly_readable<It>);
+    static_assert(std::ranges::input_range<View>);
+    static_assert(std::ranges::forward_range<View>);
+    static_assert(std::ranges::bidirectional_range<View>);
+    // static_assert(std::ranges::random_access_range<View>); // currently not supported
+    static_assert(not std::assignable_from<decltype(access(*std::ranges::begin(tv))), int>);
   }
   { // check empty
     std::vector<int> v;
