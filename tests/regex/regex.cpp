@@ -47,11 +47,11 @@ TEST_CASE("regex v2", "[regex][v2]") {
     std::ranges::copy(regex::regex_split(s, re, true) | std::views::join, std::back_inserter(r));
     CHECK(r == s);
   }
-  {
-    std::string_view s = "23+68*45-96/12";
-    const std::regex re{R"([\+\-\*/])"};
-    std::string r;
-    std::ranges::copy(regex::regex_split_n(s, re, 1) | std::views::join, std::back_inserter(r));
-    CHECK(r == "2368*45-96/12");
-  }
+  // {
+  //   std::string_view s = "23+68*45-96/12";
+  //   const std::regex re{R"([\+\-\*/])"};
+  //   std::string r;
+  //   std::ranges::copy(regex::regex_split_n(s, re, 1) | std::views::join, std::back_inserter(r));
+  //   CHECK(r == "2368*45-96/12");
+  // }
 }

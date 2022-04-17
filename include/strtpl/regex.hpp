@@ -150,7 +150,7 @@ namespace strtpl::regex::v2 {
     return trailing_view(regex_range(s, re, flags), 2) | std::views::transform(fn);
   }
 
-  template <class Traits, class CharT, class ST>
+  /* template <class Traits, class CharT, class ST>
   auto
   regex_split_n(std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re,
                 std::size_t n, bool keepend = false,
@@ -163,5 +163,5 @@ namespace strtpl::regex::v2 {
     };
     return trailing_view(regex_range(s, re, flags) | std::views::take(n), 2)
            | std::views::transform(fn);
-  }
+  } */
 } // namespace strtpl::regex::v2
