@@ -8,7 +8,7 @@
 namespace regex = strtpl::regex;
 
 TEST_CASE("regex", "[regex]") {
-  {
+  { // regex_range
     std::string_view s = "abc123def123ghi";
     const std::regex re{R"(\d+)"};
     std::ranges::common_range auto r = regex::regex_range(s, re);
@@ -16,7 +16,7 @@ TEST_CASE("regex", "[regex]") {
       CHECK(mr.format("$0") == "123");
     }
   }
-  {
+  { // regex_replace_fn
     std::string_view s = "abc123def";
     const std::regex re{R"(\d+)"};
     constexpr auto fn = [](auto&&) -> std::string_view { return "example"; };
