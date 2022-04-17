@@ -1,12 +1,13 @@
 /// @file regex.hpp
-#include <algorithm>  // std::ranges::copy, std::copy
+#include <algorithm>  // std::copy
 #include <functional> // std::invoke
 #include <iterator>   // std::iterator_traits, std::back_inserter
-#include <ranges>     // std::ranges::subrange
+#include <ranges> // std::ranges::subrange, std::views::join, std::views::transform, std::views::take
 #include <regex>
 #include <string_view>
 #include <type_traits> // std::remove_cvref_t
 #include <utility>
+#include <strtpl/trailing_view.hpp>
 
 namespace strtpl::regex {
 
@@ -67,30 +68,35 @@ namespace strtpl::regex {
   regex_replace_fn(
     OutputIter out, std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re,
     Fn fn, std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
-    auto r = regex_range(s, re, flags);
+    auto r = trailing_view(regex_range(s, re, flags), 2);
     const bool format_copy = !(flags & std::regex_constants::format_no_copy);
     if (r.empty()) {
       if (format_copy)
-        out = std::ranges::copy(s, out).out;
+        out = std::copy(s.begin(), s.end(), out);
     } else {
-      std::remove_cvref_t<decltype(r.begin()->suffix())> last;
       const bool format_first_only = flags & std::regex_constants::format_first_only;
-      for (const auto& mr : r) {
+      for (const auto& [mr, last] : r) {
+        if (last) {
+          out = std::copy(mr.suffix().first, mr.suffix().second, out);
+          break;
+        }
         if (format_copy)
           out = std::copy(mr.prefix().first, mr.prefix().second, out);
         out = match_results_format(mr, out, std::invoke(fn, mr), flags);
-        last = mr.suffix();
-        if (format_first_only)
+        if (format_first_only) {
+          out = std::copy(mr.suffix().first, mr.suffix().second, out);
           break;
+        }
       }
-      if (format_copy)
-        out = std::copy(last.first, last.second, out);
     }
     return out;
   }
 
+  // clang-format off
   template <class Traits, class CharT, class ST, class Fn>
-  requires regex_replace_fn_constraint<CharT, ST, Fn> std::basic_string<CharT, ST>
+  requires regex_replace_fn_constraint<CharT, ST, Fn>
+  std::basic_string<CharT, ST>
+  // clang-format on
   regex_replace_fn(
     std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re, Fn fn,
     std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
@@ -99,3 +105,63 @@ namespace strtpl::regex {
     return r;
   }
 } // namespace strtpl::regex
+
+namespace strtpl::regex::v2 {
+
+  // another version of regex_replace_fn
+  // match がないときは empty view を返す
+
+  /* // clang-format off
+  template <class Traits, class CharT, class ST, class Fn>
+  requires regex_replace_fn_constraint<CharT, ST, Fn>
+  auto
+  // clang-format on
+  regex_replace_fn(
+    std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re, Fn fn,
+    std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+    const auto gn = [&fn](const auto& x) {
+      const auto& [mr, last] = x;
+      if (last) {
+        auto r = std::ranges::subrange(mr.suffix().first, mr.suffix().second);
+        return std::ranges::join_view(std::vector{r}); // crrently error because GCC does not support `owning_view`
+      }
+      auto r1 = std::ranges::subrange(mr.prefix().first, mr.prefix().second);
+      auto r2 = std::ranges::subrange(std::invoke(fn, mr));
+      return std::ranges::join_view(std::vector{r1, r2}); // crrently error because GCC does not support `owning_view`
+    };
+    return trailing_view(regex_range(s, re, flags), 2) | std::views::transform(gn)
+           | std::views::join;
+  } */
+
+  // regex_split
+  // match がないときは empty view を返す
+
+  template <class Traits, class CharT, class ST>
+  auto
+  regex_split(std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re,
+              bool keepend = false,
+              std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+    const auto fn = [keepend](const auto& x) {
+      const auto& [mr, last] = x;
+      if (last)
+        return std::ranges::subrange(mr.suffix().first, mr.suffix().second);
+      return std::ranges::subrange(mr.prefix().first, keepend ? mr[0].second : mr.prefix().second);
+    };
+    return trailing_view(regex_range(s, re, flags), 2) | std::views::transform(fn);
+  }
+
+  /* template <class Traits, class CharT, class ST>
+  auto
+  regex_split_n(std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re,
+                std::size_t n, bool keepend = false,
+                std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+    const auto fn = [keepend](const auto& x) {
+      const auto& [mr, last] = x;
+      if (last)
+        return std::ranges::subrange(mr.suffix().first, mr.suffix().second);
+      return std::ranges::subrange(mr.prefix().first, keepend ? mr[0].second : mr.prefix().second);
+    };
+    return trailing_view(regex_range(s, re, flags) | std::views::take(n), 2)
+           | std::views::transform(fn);
+  } */
+} // namespace strtpl::regex::v2

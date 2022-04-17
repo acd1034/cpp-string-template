@@ -60,6 +60,20 @@ TEST_CASE("trailing_view", "[trailing_view]") {
     CHECK(std::ranges::equal(tv, v, std::ranges::equal_to{}, access));
     CHECK(std::ranges::equal(tv | std::views::transform(access), v));
   }
+  { // possible use
+    std::vector<std::pair<int, int>> v{
+      {0, 1},
+      {1, 2},
+      {2, 3},
+    };
+    constexpr auto fn = [](const auto& x) -> int {
+      const auto& [p, last] = x;
+      return last ? p.second : p.first;
+    };
+    auto tv = strtpl::trailing_view{v, 2};
+    CHECK(std::ranges::equal(tv | std::views::transform(fn),
+                             std::views::iota(0, std::ranges::ssize(v) + 1)));
+  }
 }
 
 TEST_CASE("trailing_view generators", "[trailing_view][generators]") {
@@ -71,7 +85,7 @@ TEST_CASE("trailing_view generators", "[trailing_view][generators]") {
     std::vector<int>{0, 1, 2}
   );
   // clang-format on
-  const auto m = GENERATE(0, 1, 2);
+  const auto m = GENERATE(0, 1, 2, 3);
   const auto n = std::ranges::ssize(v);
   auto tv = strtpl::trailing_view{v, m};
   if (n == 0) {
