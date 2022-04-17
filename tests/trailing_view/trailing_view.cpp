@@ -100,7 +100,18 @@ TEST_CASE("trailing_view", "[trailing_view]") {
     std::vector<int> v{0, 1, 2, 3};
     auto tv = strtpl::trailing_view{v, 1};
     CHECK(std::ranges::equal(tv, v, std::ranges::equal_to{}, access));
-    CHECK(std::ranges::equal(tv | std::views::transform(access), v));
+    CHECK(std::ranges::equal(tv | std::views::keys, v));
+  }
+  { // check assignment
+    std::vector<int> v{0, 1, 2, 3};
+    auto tv = strtpl::trailing_view{v, 2};
+    for (auto&& [x, last] : tv)
+      if (last)
+        x = 5;
+      else
+        x = 4;
+    std::vector<int> r{4, 4, 4, 5, 5};
+    CHECK(std::ranges::equal(tv | std::views::keys, r));
   }
   { // possible use
     std::vector<std::pair<int, int>> v{

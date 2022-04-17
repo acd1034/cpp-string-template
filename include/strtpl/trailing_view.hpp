@@ -43,9 +43,7 @@ namespace strtpl {
       return {*this};
     }
     constexpr iterator<true>
-    begin() const requires std::ranges::input_range<const View>
-    // and std::ranges::view<const View> // const View は movable ではない
-    {
+    begin() const requires std::ranges::input_range<const View> {
       return {*this};
     }
 
