@@ -110,7 +110,7 @@ namespace strtpl::regex::v2 {
 
   // another version of regex_replace_fn
 
-  // clang-format off
+  /* // clang-format off
   template <class Traits, class CharT, class ST, class Fn>
   requires regex_replace_fn_constraint<CharT, ST, Fn>
   auto
@@ -122,17 +122,15 @@ namespace strtpl::regex::v2 {
       const auto& [mr, last] = x;
       if (last) {
         auto r = std::ranges::subrange(mr.suffix().first, mr.suffix().second);
-        return std::ranges::join_view(
-          std::vector{r}); // crrently error because GCC does not support `owning_view`
+        return std::ranges::join_view(std::vector{r}); // crrently error because GCC does not support `owning_view`
       }
       auto r1 = std::ranges::subrange(mr.prefix().first, mr.prefix().second);
       auto r2 = std::ranges::subrange(std::invoke(fn, mr));
-      return std::ranges::join_view(
-        std::vector{r1, r2}); // crrently error because GCC does not support `owning_view`
+      return std::ranges::join_view(std::vector{r1, r2}); // crrently error because GCC does not support `owning_view`
     };
     return trailing_view(regex_range(s, re, flags), 2) | std::views::transform(gn)
            | std::views::join;
-  }
+  } */
 
   // regex_split
 
