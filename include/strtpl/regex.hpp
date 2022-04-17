@@ -7,6 +7,7 @@
 #include <string_view>
 #include <type_traits> // std::remove_cvref_t
 #include <utility>
+#include <strtpl/trailing_view.hpp>
 
 namespace strtpl::regex {
 
@@ -67,24 +68,26 @@ namespace strtpl::regex {
   regex_replace_fn(
     OutputIter out, std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re,
     Fn fn, std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
-    auto r = regex_range(s, re, flags);
+    auto r = trailing_view(regex_range(s, re, flags), 2);
     const bool format_copy = !(flags & std::regex_constants::format_no_copy);
     if (r.empty()) {
       if (format_copy)
         out = std::ranges::copy(s, out).out;
     } else {
-      std::remove_cvref_t<decltype(r.begin()->suffix())> last;
       const bool format_first_only = flags & std::regex_constants::format_first_only;
-      for (const auto& mr : r) {
+      for (const auto& [mr, last] : r) {
+        if (last) {
+          out = std::copy(mr.suffix().first, mr.suffix().second, out);
+          break;
+        }
         if (format_copy)
           out = std::copy(mr.prefix().first, mr.prefix().second, out);
         out = match_results_format(mr, out, std::invoke(fn, mr), flags);
-        last = mr.suffix();
-        if (format_first_only)
+        if (format_first_only) {
+          out = std::copy(mr.suffix().first, mr.suffix().second, out);
           break;
+        }
       }
-      if (format_copy)
-        out = std::copy(last.first, last.second, out);
     }
     return out;
   }
