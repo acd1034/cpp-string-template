@@ -1,7 +1,7 @@
 /// @file trailing_view.hpp
-#include <iterator>    //
-#include <ranges>      //
-#include <type_traits> //
+#include <iterator> // std::iterator_traits
+#include <ranges>
+#include <type_traits>
 #include <utility>
 
 namespace strtpl {
