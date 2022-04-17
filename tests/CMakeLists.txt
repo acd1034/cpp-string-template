@@ -69,3 +69,4 @@ FetchContent_Declare(Catch2
 FetchContent_MakeAvailable(Catch2)
 
 add_subdirectory(main)
+add_subdirectory(regex)
