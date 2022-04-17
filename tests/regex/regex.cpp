@@ -17,10 +17,10 @@ TEST_CASE("regex", "[regex]") {
     }
   } // namespace strtpl::regex;
   { // regex_replace_fn
-    std::string_view s = "abc123def";
+    std::string_view s = "abc123def456ghi789";
     const std::regex re{R"(\d+)"};
-    constexpr auto fn = [](auto&&) -> std::string_view { return "example"; };
-    CHECK(regex::regex_replace_fn(s, re, fn) == "abcexampledef");
+    constexpr auto fn = [](auto&&) -> std::string_view { return "exa"; };
+    CHECK(regex::regex_replace_fn(s, re, fn) == "abcexadefexaghiexa");
   }
 }
 
