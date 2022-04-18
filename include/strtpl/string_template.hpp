@@ -149,12 +149,10 @@ namespace strtpl {
       const auto fn = [this, &map](const std::match_results<Iter>& mr)
         -> std::remove_cvref_t<map_mapped_t<Map, std::basic_string_view<CharT, ST>>> {
         if (mr[1].matched) {
-          std::basic_string_view<CharT, ST> key(mr[1].first,
-                                                static_cast<std::size_t>(mr[1].length()));
+          std::basic_string_view<CharT, ST> key(mr[1].first, mr[1].second);
           return at_or(map, key, "NONE");
         } else if (mr[2].matched) {
-          std::basic_string_view<CharT, ST> key(mr[2].first,
-                                                static_cast<std::size_t>(mr[2].length()));
+          std::basic_string_view<CharT, ST> key(mr[2].first, mr[2].second);
           return at_or(map, key, "NONE");
         } else if (mr[3].matched) {
           return delimiter;

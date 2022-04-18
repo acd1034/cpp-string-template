@@ -104,6 +104,33 @@ namespace strtpl::regex {
     regex_replace_fn(std::back_inserter(r), s, re, fn, flags);
     return r;
   }
+
+  // regex_count
+
+  /* template <class Traits, class CharT, class ST>
+  std::pair<std::ptrdiff_t, std::ptrdiff_t>
+  regex_count(std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re,
+              std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+    auto r = trailing_view(regex_range(s, re, flags), 2);
+    std::ptrdiff_t n = 0, m = 0;
+    if (r.empty()) {
+      m = s.length();
+    } else {
+      const bool format_first_only = flags & std::regex_constants::format_first_only;
+      for (const auto& [mr, last] : r) {
+        if (last) {
+          m = mr.suffix().length();
+          break;
+        }
+        ++n;
+        if (format_first_only) {
+          m = mr.suffix().length();
+          break;
+        }
+      }
+    }
+    return {n, m};
+  } */
 } // namespace strtpl::regex
 
 namespace strtpl::regex::v2 {

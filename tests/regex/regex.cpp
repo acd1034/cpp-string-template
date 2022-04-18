@@ -22,6 +22,15 @@ TEST_CASE("regex", "[regex]") {
     constexpr auto fn = [](auto&&) -> std::string_view { return "exa"; };
     CHECK(regex::regex_replace_fn(s, re, fn) == "abcexadefexaghiexa");
   }
+  /* { // regex_count
+    std::string_view s = "1\n"
+                         "2\r"
+                         "12345";
+    const std::regex re{R"([\n\r])"};
+    auto [n, m] = regex::regex_count(s, re);
+    CHECK(n == 2);
+    CHECK(m == 5);
+  } */
 }
 
 TEST_CASE("regex v2", "[regex][v2]") {
