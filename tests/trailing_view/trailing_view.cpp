@@ -2,6 +2,7 @@
 #include <catch2/catch.hpp>
 
 #include <algorithm> // std::ranges::equal
+#include <array>
 #include <vector>
 #include <strtpl/trailing_view.hpp>
 
@@ -128,8 +129,23 @@ TEST_CASE("trailing_view", "[trailing_view]") {
       return last ? p.second : p.first;
     };
     auto tv = strtpl::trailing_view{v, 2};
-    CHECK(std::ranges::equal(tv | std::views::transform(fn),
-                             std::views::iota(0, std::ranges::ssize(v) + 1)));
+    std::vector<int> r{0, 1, 2, 3};
+    CHECK(std::ranges::equal(tv | std::views::transform(fn), r));
+  }
+  { // possible use
+    constexpr std::ptrdiff_t N = 4;
+    std::vector<std::array<int, N>> v{
+      {0, 1, 2, 3},
+      {1, 2, 3, 4},
+      {2, 3, 4, 5},
+    };
+    constexpr auto fn = [](const auto& x) -> int {
+      const auto& [a, n] = x;
+      return a[n];
+    };
+    auto tv = strtpl::trailing_view{v, N};
+    std::vector<int> r{0, 1, 2, 3, 4, 5};
+    CHECK(std::ranges::equal(tv | std::views::transform(fn), r));
   }
 }
 
