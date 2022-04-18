@@ -20,6 +20,7 @@ TEST_CASE("trailing_view", "[trailing_view]") {
     static_assert(std::ranges::forward_range<View>);
     static_assert(std::ranges::bidirectional_range<View>);
     // static_assert(std::ranges::random_access_range<View>); // currently not supported
+    static_assert(std::ranges::sized_range<View>);
     static_assert(std::assignable_from<decltype(access(*std::ranges::begin(tv))), int>);
   }
   {
@@ -33,6 +34,7 @@ TEST_CASE("trailing_view", "[trailing_view]") {
     static_assert(std::ranges::forward_range<View>);
     static_assert(std::ranges::bidirectional_range<View>);
     // static_assert(std::ranges::random_access_range<View>); // currently not supported
+    static_assert(not std::ranges::sized_range<View>);
     static_assert(not std::assignable_from<decltype(access(*std::ranges::begin(tv))), int>);
   }
   {
@@ -46,6 +48,7 @@ TEST_CASE("trailing_view", "[trailing_view]") {
     static_assert(std::ranges::forward_range<View>);
     static_assert(std::ranges::bidirectional_range<View>);
     // static_assert(std::ranges::random_access_range<View>); // currently not supported
+    static_assert(std::ranges::sized_range<View>);
     static_assert(not std::assignable_from<decltype(access(*std::ranges::begin(tv))), int>);
   }
   {
@@ -59,6 +62,7 @@ TEST_CASE("trailing_view", "[trailing_view]") {
     static_assert(std::ranges::forward_range<View>);
     static_assert(std::ranges::bidirectional_range<View>);
     // static_assert(std::ranges::random_access_range<View>); // currently not supported
+    static_assert(not std::ranges::sized_range<View>);
     static_assert(not std::assignable_from<decltype(access(*std::ranges::begin(tv))), int>);
   }
   { // check empty
