@@ -51,6 +51,15 @@ namespace strtpl {
     end() const {
       return std::default_sentinel;
     }
+
+    constexpr std::ranges::range_size_t<View>
+    size() requires std::ranges::sized_range<View> {
+      return std::ranges::empty(base_) ? 0 : std::ranges::size(base_) + count_ - 1;
+    }
+    constexpr std::ranges::range_size_t<View>
+    size() const requires std::ranges::sized_range<const View> {
+      return std::ranges::empty(base_) ? 0 : std::ranges::size(base_) + count_ - 1;
+    }
   };
 
   template <class Range, class DifferenceType>
