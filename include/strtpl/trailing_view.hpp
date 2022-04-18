@@ -52,13 +52,19 @@ namespace strtpl {
       return std::default_sentinel;
     }
 
-    constexpr std::ranges::range_size_t<View>
+    constexpr auto
     size() requires std::ranges::sized_range<View> {
-      return std::ranges::empty(base_) ? 0 : std::ranges::size(base_) + count_ - 1;
+      return std::ranges::empty(base_)
+               ? 0
+               : std::ranges::size(base_)
+                   + static_cast<std::ranges::range_size_t<View>>(count_ - 1);
     }
-    constexpr std::ranges::range_size_t<View>
+    constexpr auto
     size() const requires std::ranges::sized_range<const View> {
-      return std::ranges::empty(base_) ? 0 : std::ranges::size(base_) + count_ - 1;
+      return std::ranges::empty(base_)
+               ? 0
+               : std::ranges::size(base_)
+                   + static_cast<std::ranges::range_size_t<const View>>(count_ - 1);
     }
   };
 
