@@ -93,9 +93,6 @@ namespace strtpl {
   private:
     using Parent = std::conditional_t<Const, const trailing_view, trailing_view>;
     using Base = std::conditional_t<Const, const View, View>;
-    template <class T>
-    using FirstType = std::conditional_t<Const and std::is_lvalue_reference_v<T>,
-                                         std::add_const_t<std::remove_reference_t<T>>&, T>;
 
     [[no_unique_address]] Parent* parent_ = nullptr;
     [[no_unique_address]] std::ranges::iterator_t<Base> current_ = std::ranges::iterator_t<Base>();
@@ -116,8 +113,8 @@ namespace strtpl {
       /* else */                                                 std::input_iterator_tag>>;
     // clang-format on
     using difference_type = std::ranges::range_difference_t<Base>;
-    using value_type = std::pair<FirstType<std::ranges::range_reference_t<Base>>,
-                                 std::ranges::range_difference_t<Base>>;
+    using value_type =
+      std::pair<std::ranges::range_reference_t<Base>, std::ranges::range_difference_t<Base>>;
 
     iterator() requires std::default_initializable<std::ranges::iterator_t<Base>>
     = default;
@@ -145,8 +142,7 @@ namespace strtpl {
       return ncount_;
     }
 
-    constexpr std::pair<FirstType<std::ranges::range_reference_t<Base>>,
-                        std::ranges::range_difference_t<Base>>
+    constexpr std::pair<std::ranges::range_reference_t<Base>, std::ranges::range_difference_t<Base>>
     operator*() const {
       assert(accessible());
       return {*current_, ncount_};
