@@ -6,6 +6,23 @@
 #include <vector>
 #include <strtpl/trailing_view.hpp>
 
+namespace test {
+
+  // index
+
+  struct index_fn {
+    template <std::ranges::random_access_range RARng, class Integral>
+    requires std::ranges::borrowed_range<RARng> and std::convertible_to<
+      Integral, std::ranges::range_difference_t<RARng>>
+    constexpr std::ranges::range_reference_t<RARng>
+    operator()(RARng&& r, Integral n) const {
+      return std::ranges::begin(r)[static_cast<std::ranges::range_difference_t<RARng>>(n)];
+    }
+  };
+
+  inline constexpr index_fn index;
+} // namespace test
+
 TEST_CASE("trailing_view", "[trailing_view]") {
   constexpr auto access = [](auto&& x) -> decltype(auto) {
     return get<0>(std::forward<decltype(x)>(x));
@@ -141,7 +158,7 @@ TEST_CASE("trailing_view", "[trailing_view]") {
     };
     constexpr auto fn = [](const auto& x) -> int {
       const auto& [a, n] = x;
-      return a[n];
+      return test::index(a, n);
     };
     auto tv = strtpl::trailing_view{v, N};
     std::vector<int> r{0, 1, 2, 3, 4, 5};
@@ -168,7 +185,7 @@ TEST_CASE("trailing_view generators", "[trailing_view][generators]") {
     auto it = std::ranges::begin(tv);
     for (std::ptrdiff_t i = 0; i < n - 1; ++i) {
       const auto& [x, count] = *it;
-      CHECK(x == v[i]);
+      CHECK(x == test::index(v, i));
       CHECK(count == 0);
       ++it;
     }

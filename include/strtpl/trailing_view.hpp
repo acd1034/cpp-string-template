@@ -158,7 +158,8 @@ namespace strtpl {
       if (next_ == std::ranges::end(parent_->base())) {
         ++ncount_;
       } else {
-        current_ = next_++;
+        current_ = next_;
+        ++next_;
       }
       return *this;
     }
@@ -178,7 +179,8 @@ namespace strtpl {
     constexpr iterator&
     operator--() requires std::ranges::bidirectional_range<Base> {
       if (ncount_ == 0) {
-        next_ = current_--;
+        next_ = current_;
+        --current_;
       } else {
         --ncount_;
       }
