@@ -20,7 +20,9 @@ namespace test {
     }
   };
 
-  inline constexpr index_fn index;
+  inline namespace cpo {
+    inline constexpr index_fn index;
+  }
 } // namespace test
 
 TEST_CASE("trailing_view", "[trailing_view]") {
