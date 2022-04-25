@@ -183,7 +183,7 @@ namespace strtpl {
       return *this;
     }
     constexpr iterator
-    operator--(int) requires std::ranges::forward_range<Base> {
+    operator--(int) requires std::ranges::bidirectional_range<Base> {
       auto tmp = *this;
       --*this;
       return tmp;
