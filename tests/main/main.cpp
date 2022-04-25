@@ -30,13 +30,13 @@ TEST_CASE("main", "[main]") {
     };
     std::string_view s1 = "This is $what.";
     std::string_view s2 = "This is ${what}ified.";
-    std::string_view s3 = "This is dollar →$$←.";
-    std::string_view s4 = "This is error →$←.";
-    std::string_view s5 = "This is none →$which←.";
+    std::string_view s3 = "This is dollar $$.";
+    std::string_view s4 = "This is error $.";
+    std::string_view s5 = "This is error too $which.";
     CHECK(strtpl::substitute(s1, map) == "This is example.");
     CHECK(strtpl::substitute(s2, map) == "This is exampleified.");
-    CHECK(strtpl::substitute(s3, map) == "This is dollar →$←.");
-    CHECK(strtpl::substitute(s4, map) == "This is error →ERROR←.");
-    CHECK(strtpl::substitute(s5, map) == "This is none →NONE←.");
+    CHECK(strtpl::substitute(s3, map) == "This is dollar $.");
+    CHECK_THROWS_AS(strtpl::substitute(s4, map), std::runtime_error);
+    CHECK_THROWS_AS(strtpl::substitute(s5, map), std::out_of_range);
   }
 }
