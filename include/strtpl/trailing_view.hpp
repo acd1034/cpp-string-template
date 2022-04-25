@@ -20,8 +20,6 @@ namespace strtpl {
     = default;
     constexpr trailing_view(View base, std::ranges::range_difference_t<View> count)
       : base_(std::move(base)), count_(std::move(count)) {
-      if (std::ranges::empty(base_))
-        count_ = 0;
       assert(count_ >= 0);
     }
 
@@ -101,7 +99,8 @@ namespace strtpl {
 
     constexpr bool
     accessible() const noexcept {
-      return next_ != std::ranges::end(parent_->base()) or ncount_ < parent_->count();
+      return next_ != std::ranges::end(parent_->base())
+             or (not std::ranges::empty(parent_->base()) and ncount_ < parent_->count());
     }
 
   public:
@@ -183,7 +182,7 @@ namespace strtpl {
       return *this;
     }
     constexpr iterator
-    operator--(int) requires std::ranges::forward_range<Base> {
+    operator--(int) requires std::ranges::bidirectional_range<Base> {
       auto tmp = *this;
       --*this;
       return tmp;
@@ -197,7 +196,8 @@ namespace strtpl {
     friend constexpr bool
     operator==(const iterator& x, std::default_sentinel_t) requires
       std::equality_comparable<std::ranges::iterator_t<Base>> {
-      return x.next_ == std::ranges::end(x.parent_->base()) and x.ncount_ == x.parent_->count();
+      return x.next_ == std::ranges::end(x.parent_->base())
+             and (std::ranges::empty(x.parent_->base()) or x.ncount_ == x.parent_->count());
     }
 
     friend constexpr std::pair<std::ranges::range_rvalue_reference_t<Base>,
