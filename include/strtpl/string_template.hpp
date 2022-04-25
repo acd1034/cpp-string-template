@@ -16,10 +16,10 @@ namespace strtpl {
   template <class BidirectionalIter, class Allocator, class OutputIter, class ST>
   OutputIter
   match_results_format(
-    const std::match_results<BidirectionalIter, Allocator>& mr, OutputIter out,
+    const std::match_results<BidirectionalIter, Allocator>& mo, OutputIter out,
     std::basic_string_view<typename std::iterator_traits<BidirectionalIter>::value_type, ST> fmt,
     std::regex_constants::match_flag_type flags = std::regex_constants::format_default) {
-    return mr.format(out, fmt.data(), fmt.data() + fmt.size(), flags);
+    return mo.format(out, fmt.data(), fmt.data() + fmt.size(), flags);
   }
 
   // regex_escape
@@ -29,6 +29,7 @@ namespace strtpl {
   regex_escape(std::basic_string_view<CharT, ST> s,
                std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
     std::basic_string<CharT, ST> r;
+    // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
     const std::basic_regex<CharT> re{R"([.*+?^${}()|[\]\\])"};
     std::regex_replace(std::back_inserter(r), s.begin(), s.end(), re, "\\$&", flags);
     return r;
@@ -169,23 +170,24 @@ namespace strtpl {
     std::regex_constants::match_flag_type flags = std::regex_constants::match_default;
 
     string_template() = default;
-    constexpr string_template(std::basic_string_view<CharT> delim,
-                              std::basic_string_view<CharT> idpat)
-      : delimiter{delim}, idpattern{idpat}, braceidpattern{idpat} {}
     // clang-format off
     constexpr string_template(std::basic_string_view<CharT> delim,
-                              std::basic_string_view<CharT> idpat,
-                              std::basic_string_view<CharT> braceidpat,
+                              std::basic_string_view<CharT> id)
+      : delimiter{delim}, idpattern{id}, braceidpattern{id} {}
+    constexpr string_template(std::basic_string_view<CharT> delim,
+                              std::basic_string_view<CharT> id,
+                              std::basic_string_view<CharT> bid,
                               std::regex_constants::match_flag_type f = std::regex_constants::match_default)
-      : delimiter{delim}, idpattern{idpat}, braceidpattern{braceidpat}, flags{f} {}
+      : delimiter{delim}, idpattern{id}, braceidpattern{bid}, flags{f} {}
     // clang-format on
 
   private:
     template <class BidirectionalIter>
     static void
-    _invalid(const std::match_results<BidirectionalIter>& mr) {
+    _invalid(const std::match_results<BidirectionalIter>& mo) {
+      // See https://docs.python.org/ja/3/library/stdtypes.html#str.splitlines
       const std::basic_regex<CharT> re{R"((\r\n?|[\n\v\f]))"};
-      const auto [lineno, colno] = regex_count(mr.prefix().first, mr.prefix().second, re);
+      const auto [lineno, colno] = regex_count(mo.prefix().first, mo.prefix().second, re);
       const auto msg = "Invalid placeholder in string: line " + std::to_string(lineno + 1)
                        + ", col " + std::to_string(colno + 1);
       throw std::runtime_error(msg);
@@ -207,28 +209,29 @@ namespace strtpl {
       }()};
       const auto convert =
         [this,
-         &map](const std::match_results<typename std::basic_string_view<CharT, ST>::iterator>& mr)
+         &map](const std::match_results<typename std::basic_string_view<CharT, ST>::iterator>& mo)
         -> std::remove_cvref_t<map_mapped_t<Map, std::basic_string_view<CharT, ST>>> {
-        if (mr[1].matched) {
-          std::basic_string_view<CharT, ST> key(mr[1].first,
-                                                static_cast<std::size_t>(mr[1].length()));
+        if (mo[1].matched) {
+          std::basic_string_view<CharT, ST> key(mo[1].first,
+                                                static_cast<std::size_t>(mo[1].length()));
           return at(map, key);
-        } else if (mr[2].matched) {
-          std::basic_string_view<CharT, ST> key(mr[2].first,
-                                                static_cast<std::size_t>(mr[2].length()));
+        } else if (mo[2].matched) {
+          std::basic_string_view<CharT, ST> key(mo[2].first,
+                                                static_cast<std::size_t>(mo[2].length()));
           return at(map, key);
-        } else if (mr[3].matched) {
+        } else if (mo[3].matched) {
           return delimiter;
-        } else if (mr[4].matched) {
-          _invalid(mr);
+        } else if (mo[4].matched) {
+          _invalid(mo);
         }
-        throw std::runtime_error("Unrecognized named group in pattern");
+        throw std::runtime_error("Unrecognized group in pattern");
       };
       return regex_replace_fn(s, re, convert, flags);
     }
   }; // struct string_template
 
   inline namespace cpo {
+    // See https://github.com/python/cpython/blob/971343eb569a3418aa9a0bad9b638cccf1470ef8/Lib/string.py#L57
     inline constexpr string_template<char> substitute{"$", "([_a-zA-Z][_a-zA-Z0-9]*)"};
-  }
+  } // namespace cpo
 } // namespace strtpl
