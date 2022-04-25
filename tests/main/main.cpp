@@ -6,13 +6,21 @@
 #include <strtpl/string_template.hpp>
 
 TEST_CASE("main", "[main]") {
-  {
+  { // regex_replace_fn
     std::string_view s = "abc123def";
     const std::regex re{R"(\d+)"};
     constexpr auto fn = [](auto&&) -> std::string_view { return "example"; };
     CHECK(strtpl::regex_replace_fn(s, re, fn) == "abcexampledef");
   }
-  {
+  { // regex_count
+    std::string_view s = "abc123"
+                         "def";
+    const std::regex re{R"(\d+)"};
+    const auto [n, m] = strtpl::regex_count(s, re);
+    CHECK(n == 1);
+    CHECK(m == 3);
+  }
+  { // substitute
     std::unordered_map<std::string_view, std::string_view> map{
       {"what", "example"},
     };
