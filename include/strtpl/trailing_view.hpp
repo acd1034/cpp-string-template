@@ -41,7 +41,7 @@ namespace strtpl {
       return {*this, std::ranges::begin(base_)};
     }
     constexpr iterator<true>
-    begin() const requires std::ranges::range<const View> {
+    begin() const requires std::ranges::input_range<const View> {
       return {*this, std::ranges::begin(base_)};
     }
 
@@ -54,11 +54,12 @@ namespace strtpl {
       return {*this, std::ranges::end(base_), count_};
     }
     constexpr auto
-    end() const requires std::ranges::range<const View> {
+    end() const requires std::ranges::input_range<const View> {
       return std::default_sentinel;
     }
     constexpr iterator<true>
-    end() const requires std::ranges::common_range<const View> {
+    end() const requires
+      std::ranges::input_range<const View> and std::ranges::common_range<const View> {
       return {*this, std::ranges::end(base_), count_};
     }
 
