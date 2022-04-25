@@ -14,7 +14,7 @@ namespace strtpl {
 
   template <class BidirectionalIter, class Allocator, class OutputIter, class ST>
   OutputIter
-  regex_format(
+  match_results_format(
     const std::match_results<BidirectionalIter, Allocator>& mr, OutputIter out,
     std::basic_string_view<typename std::iterator_traits<BidirectionalIter>::value_type, ST> fmt,
     std::regex_constants::match_flag_type flags = std::regex_constants::format_default) {
@@ -54,7 +54,7 @@ namespace strtpl {
       for (; i != eof; ++i) {
         if (!(flags & std::regex_constants::format_no_copy))
           out = std::copy(i->prefix().first, i->prefix().second, out);
-        out = regex_format(*i, out, std::invoke(fn, *i), flags);
+        out = match_results_format(*i, out, std::invoke(fn, *i), flags);
         lm = i->suffix();
         if (flags & std::regex_constants::format_first_only)
           break;
