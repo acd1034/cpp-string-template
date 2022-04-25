@@ -46,20 +46,22 @@ namespace strtpl {
     using Iter = std::regex_iterator<BidirectionalIter, CharT, Traits>;
     Iter i(first, last, re, flags);
     Iter eof;
+    const bool format_copy = !(flags & std::regex_constants::format_no_copy);
     if (i == eof) {
-      if (!(flags & std::regex_constants::format_no_copy))
+      if (format_copy)
         out = std::copy(first, last, out);
     } else {
       std::sub_match<BidirectionalIter> lm;
+      const bool format_first_only = flags & std::regex_constants::format_first_only;
       for (; i != eof; ++i) {
-        if (!(flags & std::regex_constants::format_no_copy))
+        if (format_copy)
           out = std::copy(i->prefix().first, i->prefix().second, out);
         out = match_results_format(*i, out, std::invoke(fn, *i), flags);
         lm = i->suffix();
-        if (flags & std::regex_constants::format_first_only)
+        if (format_first_only)
           break;
       }
-      if (!(flags & std::regex_constants::format_no_copy))
+      if (format_copy)
         out = std::copy(lm.first, lm.second, out);
     }
     return out;
