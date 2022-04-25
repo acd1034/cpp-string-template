@@ -11,7 +11,7 @@
 
 namespace strtpl {
 
-  // regex_replace_fn
+  // match_results_format
 
   template <class BidirectionalIter, class Allocator, class OutputIter, class ST>
   OutputIter
@@ -21,6 +21,8 @@ namespace strtpl {
     std::regex_constants::match_flag_type flags = std::regex_constants::format_default) {
     return mr.format(out, fmt.data(), fmt.data() + fmt.size(), flags);
   }
+
+  // regex_replace_fn
 
   template <class T, class CharT>
   struct is_std_basic_string_view_with_char_type : std::false_type {};
