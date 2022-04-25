@@ -6,6 +6,10 @@
 #include <strtpl/string_template.hpp>
 
 TEST_CASE("main", "[main]") {
+  { // regex_escape
+    std::string_view s = "$C++$";
+    CHECK(strtpl::regex_escape(s) == R"(\$C\+\+\$)");
+  }
   { // regex_replace_fn
     std::string_view s = "abc123def";
     const std::regex re{R"(\d+)"};
