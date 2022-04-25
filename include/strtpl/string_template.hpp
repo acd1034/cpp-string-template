@@ -117,22 +117,19 @@ namespace strtpl {
     std::basic_string_view<CharT> idpattern{};
     std::basic_string_view<CharT> braceidpattern{};
     const std::basic_string_view<CharT> invalid{"()"};
-    std::regex_constants::match_flag_type flags{std::regex_constants::match_default};
+    std::regex_constants::match_flag_type flags = std::regex_constants::match_default;
 
     string_template() = default;
-    constexpr explicit string_template(std::basic_string_view<CharT> _delimiter,
-                                       std::basic_string_view<CharT> _idpattern)
-      : delimiter{_delimiter}, idpattern{_idpattern}, braceidpattern{_idpattern} {}
-    constexpr explicit string_template(std::basic_string_view<CharT> _delimiter,
-                                       std::basic_string_view<CharT> _idpattern,
-                                       std::basic_string_view<CharT> _braceidpattern)
-      : delimiter{_delimiter}, idpattern{_idpattern}, braceidpattern{_braceidpattern} {}
-    constexpr explicit string_template(std::basic_string_view<CharT> _delimiter,
-                                       std::basic_string_view<CharT> _idpattern,
-                                       std::basic_string_view<CharT> _braceidpattern,
-                                       std::regex_constants::match_flag_type _flags)
-      : delimiter{_delimiter}, idpattern{_idpattern}, braceidpattern{_braceidpattern}, flags{
-                                                                                         _flags} {}
+    constexpr string_template(std::basic_string_view<CharT> delim,
+                              std::basic_string_view<CharT> idpat)
+      : delimiter{delim}, idpattern{idpat}, braceidpattern{idpat} {}
+    // clang-format off
+    constexpr string_template(std::basic_string_view<CharT> delim,
+                              std::basic_string_view<CharT> idpat,
+                              std::basic_string_view<CharT> braceidpat,
+                              std::regex_constants::match_flag_type f = std::regex_constants::match_default)
+      : delimiter{delim}, idpattern{idpat}, braceidpattern{braceidpat}, flags{f} {}
+    // clang-format on
 
     // clang-format off
     template <class ST, class Map>
