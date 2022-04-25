@@ -41,7 +41,7 @@ namespace strtpl {
       return {*this};
     }
     constexpr iterator<true>
-    begin() const requires std::ranges::input_range<const View> {
+    begin() const requires std::ranges::range<const View> {
       return {*this};
     }
 
