@@ -22,6 +22,18 @@ namespace strtpl {
     return mr.format(out, fmt.data(), fmt.data() + fmt.size(), flags);
   }
 
+  // regex_escape
+
+  template <class CharT, class ST>
+  std::basic_string<CharT, ST>
+  regex_escape(std::basic_string_view<CharT, ST> s,
+               std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+    std::basic_string<CharT, ST> r;
+    const std::basic_regex<CharT> re{R"([.*+?^${}()|[\]\\])"};
+    std::regex_replace(std::back_inserter(r), s.begin(), s.end(), re, "\\$&", flags);
+    return r;
+  }
+
   // regex_replace_fn
 
   template <class T, class CharT>
@@ -172,7 +184,7 @@ namespace strtpl {
     template <class BidirectionalIter>
     static void
     _invalid(const std::match_results<BidirectionalIter>& mr) {
-      const std::basic_regex<CharT> re{"[\\n\\r\\v\\f]"};
+      const std::basic_regex<CharT> re{R"([\n\r\v\f])"};
       const auto [lineno, colno] = regex_count(mr.prefix().first, mr.prefix().second, re);
       const auto msg = "Invalid placeholder in string: line " + std::to_string(lineno + 1)
                        + ", col " + std::to_string(colno + 1);
@@ -188,7 +200,7 @@ namespace strtpl {
     operator()(std::basic_string_view<CharT, ST> s, const Map& map) const {
       const std::basic_regex<CharT> re{[this] {
         using namespace hidden_ops::string_view_ops;
-        const auto delim = std::basic_string<CharT>{"\\"} + delimiter;
+        const auto delim = regex_escape(delimiter);
         const auto escape = "(" + delim + ")";
         return delim + "(?:" + idpattern + "|\\{" + braceidpattern + "\\}|" + escape + "|" + invalid
                + ")";
