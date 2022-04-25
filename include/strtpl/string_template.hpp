@@ -1,5 +1,6 @@
 /// @file string_template.hpp
 #include <algorithm>  // std::copy
+#include <exception>  // std::runtime_error
 #include <functional> // std::invoke
 #include <iterator>   // std::iterator_traits, std::back_inserter, std::distance
 #include <regex>
@@ -165,6 +166,17 @@ namespace strtpl {
       : delimiter{delim}, idpattern{idpat}, braceidpattern{braceidpat}, flags{f} {}
     // clang-format on
 
+  private:
+    void
+    _invalid(const std::match_results<typename std::basic_string_view<CharT, ST>::iterator>& mr) {
+      const std::basic_regex<CharT> re{"[\\n\\r\\v\\f]"};
+      const auto [lineno, colno] = regex_count(mr.prefix().first, mr.prefix().second, re);
+      const auto msg = "Invalid placeholder in string: line " + std::to_string(lineno + 1)
+                       + ", col " + std::to_string(colno + 1);
+      throw std::runtime_error(msg);
+    }
+
+  public:
     // clang-format off
     template <class ST, class Map>
     requires map_with_key_type<Map, std::basic_string_view<CharT, ST>>
@@ -178,8 +190,9 @@ namespace strtpl {
         return delim + "(?:" + idpattern + "|\\{" + braceidpattern + "\\}|" + escape + "|" + invalid
                + ")";
       }()};
-      using Iter = typename std::basic_string_view<CharT, ST>::iterator;
-      const auto fn = [this, &map](const std::match_results<Iter>& mr)
+      const auto fn =
+        [this,
+         &map](const std::match_results<typename std::basic_string_view<CharT, ST>::iterator>& mr)
         -> std::remove_cvref_t<map_mapped_t<Map, std::basic_string_view<CharT, ST>>> {
         if (mr[1].matched) {
           std::basic_string_view<CharT, ST> key(mr[1].first, mr[1].second);
