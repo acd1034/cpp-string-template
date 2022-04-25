@@ -1,6 +1,6 @@
 /// @file string_template.hpp
 #include <algorithm>  // std::copy
-#include <exception>  // std::runtime_error
+#include <exception>  // std::out_of_range, std::runtime_error
 #include <functional> // std::invoke
 #include <iterator>   // std::iterator_traits, std::back_inserter, std::distance
 #include <regex>
@@ -134,14 +134,14 @@ namespace strtpl {
   using map_mapped_t = decltype(get<1>(*std::declval<Map&>().find(std::declval<const Key&>())));
 
   // clang-format off
-  template <class Map, class Key, class U, class T = std::remove_cvref_t<map_mapped_t<Map, Key>>>
-  requires map_with_key_type<Map, Key> and std::convertible_to<U&&, T>
-  T
+  template <class Map, class Key>
+  requires map_with_key_type<Map, Key>
+  constexpr decltype(auto)
   // clang-format on
-  at_or(Map& map, const Key& key, U&& v) {
+  at(Map& map, const Key& key) {
     auto i = map.find(key);
     using std::end;
-    return i != end(map) ? get<1>(*i) : static_cast<T>(std::forward<U>(v));
+    return i == end(map) ? throw std::out_of_range("strtpl::at") : get<1>(*i);
   }
 
   template <class CharT>
@@ -167,8 +167,9 @@ namespace strtpl {
     // clang-format on
 
   private:
-    void
-    _invalid(const std::match_results<typename std::basic_string_view<CharT, ST>::iterator>& mr) {
+    template <class BidirectionalIter>
+    static void
+    _invalid(const std::match_results<BidirectionalIter>& mr) {
       const std::basic_regex<CharT> re{"[\\n\\r\\v\\f]"};
       const auto [lineno, colno] = regex_count(mr.prefix().first, mr.prefix().second, re);
       const auto msg = "Invalid placeholder in string: line " + std::to_string(lineno + 1)
@@ -190,22 +191,24 @@ namespace strtpl {
         return delim + "(?:" + idpattern + "|\\{" + braceidpattern + "\\}|" + escape + "|" + invalid
                + ")";
       }()};
-      const auto fn =
+      const auto convert =
         [this,
          &map](const std::match_results<typename std::basic_string_view<CharT, ST>::iterator>& mr)
         -> std::remove_cvref_t<map_mapped_t<Map, std::basic_string_view<CharT, ST>>> {
         if (mr[1].matched) {
           std::basic_string_view<CharT, ST> key(mr[1].first, mr[1].second);
-          return at_or(map, key, "NONE");
+          return at(map, key);
         } else if (mr[2].matched) {
           std::basic_string_view<CharT, ST> key(mr[2].first, mr[2].second);
-          return at_or(map, key, "NONE");
+          return at(map, key);
         } else if (mr[3].matched) {
           return delimiter;
+        } else if (mr[4].matched) {
+          _invalid(mr);
         }
-        return "ERROR";
+        throw std::runtime_error("Unrecognized named group in pattern");
       };
-      return regex_replace_fn(s, re, fn, flags);
+      return regex_replace_fn(s, re, convert, flags);
     }
   }; // struct string_template
 
