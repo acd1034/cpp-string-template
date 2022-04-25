@@ -180,6 +180,7 @@ TEST_CASE("trailing_view generators", "[trailing_view][generators]") {
   const auto m = GENERATE(0, 1, 2, 3);
   const auto n = std::ranges::ssize(v);
   auto tv = strtpl::trailing_view{v, m};
+  CHECK(tv.count() == m);
   if (n == 0) {
     CHECK(std::ranges::empty(tv));
   } else {
