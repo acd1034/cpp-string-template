@@ -38,31 +38,43 @@ namespace strtpl {
 
     constexpr iterator<false>
     begin() {
-      return {*this};
+      return {*this, std::ranges::begin(base_)};
     }
     constexpr iterator<true>
     begin() const requires std::ranges::range<const View> {
-      return {*this};
+      return {*this, std::ranges::begin(base_)};
     }
 
     constexpr auto
-    end() const {
+    end() {
       return std::default_sentinel;
+    }
+    constexpr iterator<false>
+    end() requires std::ranges::common_range<View> {
+      return {*this, std::ranges::end(base_), count_};
+    }
+    constexpr auto
+    end() const requires std::ranges::range<const View> {
+      return std::default_sentinel;
+    }
+    constexpr iterator<true>
+    end() const requires std::ranges::common_range<const View> {
+      return {*this, std::ranges::end(base_), count_};
     }
 
     constexpr auto
     size() requires std::ranges::sized_range<View> {
       return std::ranges::empty(base_)
                ? 0
-               : std::ranges::size(base_)
-                   + static_cast<std::ranges::range_size_t<View>>(count_ - 1);
+               : std::ranges::size(base_) + static_cast<std::ranges::range_size_t<View>>(count_)
+                   - 1;
     }
     constexpr auto
     size() const requires std::ranges::sized_range<const View> {
       return std::ranges::empty(base_)
                ? 0
                : std::ranges::size(base_)
-                   + static_cast<std::ranges::range_size_t<const View>>(count_ - 1);
+                   + static_cast<std::ranges::range_size_t<const View>>(count_) - 1;
     }
   };
 
@@ -117,16 +129,15 @@ namespace strtpl {
 
     iterator() requires std::default_initializable<std::ranges::iterator_t<Base>>
     = default;
-    // clang-format off
-    constexpr iterator(Parent& parent)
-      : parent_(std::addressof(parent)),
-        current_(std::ranges::begin(parent.base())),
-        next_([&parent] {
-          if (std::ranges::empty(parent.base()))
-            return std::ranges::begin(parent.base());
-          return std::ranges::next(std::ranges::begin(parent.base()));
-        }()) {}
-    // clang-format on
+    constexpr iterator(Parent& parent, std::ranges::iterator_t<Base> current,
+                       std::ranges::range_difference_t<Base> ncount = 0)
+      : parent_(std::addressof(parent)), current_(current),
+        next_([current, b = current == std::ranges::end(parent.base())] {
+          if (b)
+            return current;
+          return std::ranges::next(current);
+        }()),
+        ncount_(ncount) {}
 
     constexpr const std::ranges::iterator_t<Base>&
     base() const& noexcept {
@@ -191,7 +202,8 @@ namespace strtpl {
     friend constexpr bool
     operator==(const iterator& x,
                const iterator& y) requires std::equality_comparable<std::ranges::iterator_t<Base>> {
-      return x.current_ == y.current_ and x.ncount_ == y.ncount_;
+      return x.next_ == y.next_
+             and (std::ranges::empty(x.parent_->base()) or x.ncount_ == y.ncount_);
     }
     friend constexpr bool
     operator==(const iterator& x, std::default_sentinel_t) requires
