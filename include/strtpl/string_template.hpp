@@ -1,7 +1,7 @@
 /// @file string_template.hpp
 #include <algorithm>  // std::copy
 #include <functional> // std::invoke
-#include <iterator>   // std::iterator_traits, std::back_inserter
+#include <iterator>   // std::iterator_traits, std::back_inserter, std::distance
 #include <regex>
 #include <string>
 #include <string_view>
@@ -79,13 +79,47 @@ namespace strtpl {
     return r;
   }
 
+  // regex_count
+
+  template <class BidirectionalIter, class Traits, class CharT>
+  std::pair<std::ptrdiff_t, std::ptrdiff_t>
+  regex_count(BidirectionalIter first, BidirectionalIter last,
+              const std::basic_regex<CharT, Traits>& re,
+              std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+    using Iter = std::regex_iterator<BidirectionalIter, CharT, Traits>;
+    Iter i(first, last, re, flags);
+    Iter eof;
+    std::ptrdiff_t n = 0, m = 0;
+    if (i == eof) {
+      m = std::distance(first, last);
+    } else {
+      std::sub_match<BidirectionalIter> lm;
+      const bool format_first_only = flags & std::regex_constants::format_first_only;
+      for (; i != eof; ++i) {
+        ++n;
+        lm = i->suffix();
+        if (format_first_only)
+          break;
+      }
+      m = lm.length();
+    }
+    return {n, m};
+  }
+
+  template <class Traits, class CharT, class ST>
+  std::pair<std::ptrdiff_t, std::ptrdiff_t>
+  regex_count(std::basic_string_view<CharT, ST> s, const std::basic_regex<CharT, Traits>& re,
+              std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
+    return regex_count(s.begin(), s.end(), re, flags);
+  }
+
   // substitute
 
   namespace hidden_ops::inline string_view_ops {
     template <class CharT, class Traits, class Allocator>
-    std::basic_string<CharT, Traits, Allocator> operator+(
-      std::basic_string<CharT, Traits, Allocator>&& lhs,
-      std::basic_string_view<CharT, Traits> rhs) {
+    std::basic_string<CharT, Traits, Allocator>
+    operator+(std::basic_string<CharT, Traits, Allocator>&& lhs,
+              std::basic_string_view<CharT, Traits> rhs) {
       return std::move(lhs.append(rhs));
     }
   } // namespace hidden_ops::inline string_view_ops
