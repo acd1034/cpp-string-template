@@ -184,7 +184,7 @@ namespace strtpl {
     template <class BidirectionalIter>
     static void
     _invalid(const std::match_results<BidirectionalIter>& mr) {
-      const std::basic_regex<CharT> re{R"([\n\r\v\f])"};
+      const std::basic_regex<CharT> re{R"((\r\n?|[\n\v\f]))"};
       const auto [lineno, colno] = regex_count(mr.prefix().first, mr.prefix().second, re);
       const auto msg = "Invalid placeholder in string: line " + std::to_string(lineno + 1)
                        + ", col " + std::to_string(colno + 1);
