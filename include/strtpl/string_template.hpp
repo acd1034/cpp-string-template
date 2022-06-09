@@ -55,7 +55,8 @@ namespace strtpl {
     std::basic_string<CharT, ST> r;
     // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
     const std::basic_regex<CharT> re(TYPED_LITERAL(CharT, R"([.*+?^${}()|[\]\\])"));
-    std::regex_replace(std::back_inserter(r), s.begin(), s.end(), re, "\\$&", flags);
+    std::regex_replace(std::back_inserter(r), s.begin(), s.end(), re, TYPED_LITERAL(CharT, "\\$&"),
+                       flags);
     return r;
   }
 
@@ -200,7 +201,7 @@ namespace strtpl {
     std::basic_string_view<CharT> delimiter{};
     std::basic_string_view<CharT> idpattern{};
     std::basic_string_view<CharT> braceidpattern{};
-    const std::basic_string_view<CharT> invalid{"()"};
+    const std::basic_string_view<CharT> invalid{TYPED_LITERAL(CharT, "()")};
     std::regex_constants::match_flag_type flags = std::regex_constants::match_default;
 
     string_template() = default;
@@ -224,9 +225,10 @@ namespace strtpl {
       const std::basic_regex<CharT> re{[this] {
         using namespace hidden_ops::string_view_ops;
         const auto delim = regex_escape(delimiter);
-        const auto escape = "(" + delim + ")";
-        return delim + "(?:" + idpattern + "|\\{" + braceidpattern + "\\}|" + escape + "|" + invalid
-               + ")";
+        const auto escape = TYPED_LITERAL(CharT, "(") + delim + TYPED_LITERAL(CharT, ")");
+        return delim + TYPED_LITERAL(CharT, "(?:") + idpattern + TYPED_LITERAL(CharT, "|\\{")
+               + braceidpattern + TYPED_LITERAL(CharT, "\\}|") + escape + TYPED_LITERAL(CharT, "|")
+               + invalid + TYPED_LITERAL(CharT, ")");
       }()};
       const auto convert =
         [&delim = delimiter, first = s.begin(),
