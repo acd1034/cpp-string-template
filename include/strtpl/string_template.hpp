@@ -11,13 +11,37 @@
 
 namespace strtpl {
 
+  // TYPED_LITERAL
+  // See https://github.com/microsoft/STL/blob/17fde2cbab6e8724d81c9555237c9a623d7fb954/tests/std/tests/P0220R1_string_view/test.cpp#L260-L277
+
+  template <class CharT>
+  struct choose_literal; // not defined
+
+  template <>
+  struct choose_literal<char> {
+    static constexpr const char*
+    choose(const char* s, const wchar_t*) {
+      return s;
+    }
+  };
+
+  template <>
+  struct choose_literal<wchar_t> {
+    static constexpr const wchar_t*
+    choose(const char*, const wchar_t* s) {
+      return s;
+    }
+  };
+
+#define TYPED_LITERAL(CharT, Literal) (choose_literal<CharT>::choose(Literal, L##Literal))
+
   // match_results_format
 
-  template <class BidirectionalIter, class Allocator, class OutputIter, class ST>
+  template <class BiIter, class Allocator, class OutputIter, class ST>
   OutputIter
   match_results_format(
-    const std::match_results<BidirectionalIter, Allocator>& mo, OutputIter out,
-    std::basic_string_view<typename std::iterator_traits<BidirectionalIter>::value_type, ST> fmt,
+    const std::match_results<BiIter, Allocator>& mo, OutputIter out,
+    std::basic_string_view<typename std::iterator_traits<BiIter>::value_type, ST> fmt,
     std::regex_constants::match_flag_type flags = std::regex_constants::format_default) {
     return mo.format(out, fmt.data(), fmt.data() + fmt.size(), flags);
   }
@@ -30,8 +54,9 @@ namespace strtpl {
                std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
     std::basic_string<CharT, ST> r;
     // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
-    const std::basic_regex<CharT> re{R"([.*+?^${}()|[\]\\])"};
-    std::regex_replace(std::back_inserter(r), s.begin(), s.end(), re, "\\$&", flags);
+    const std::basic_regex<CharT> re(TYPED_LITERAL(CharT, R"([.*+?^${}()|[\]\\])"));
+    std::regex_replace(std::back_inserter(r), s.begin(), s.end(), re, TYPED_LITERAL(CharT, "\\$&"),
+                       flags);
     return r;
   }
 
@@ -44,22 +69,21 @@ namespace strtpl {
   struct is_std_basic_string_view_with_char_type<std::basic_string_view<CharT, ST>, CharT>
     : std::true_type {};
 
-  template <class BidirectionalIter, class Traits, class CharT, class Fn>
-  inline constexpr bool regex_replace_fn_constraint = std::conjunction_v<
-    std::is_invocable<Fn&, const std::match_results<BidirectionalIter>&>,
-    is_std_basic_string_view_with_char_type<
-      std::invoke_result_t<Fn&, const std::match_results<BidirectionalIter>&>, CharT>>;
+  template <class BiIter, class Traits, class CharT, class Fn>
+  inline constexpr bool regex_replace_fn_constraint =
+    std::conjunction_v<std::is_invocable<Fn&, const std::match_results<BiIter>&>,
+                       is_std_basic_string_view_with_char_type<
+                         std::invoke_result_t<Fn&, const std::match_results<BiIter>&>, CharT>>;
 
   // clang-format off
-  template <class OutputIter, class BidirectionalIter, class Traits, class CharT, class Fn>
-  requires regex_replace_fn_constraint<BidirectionalIter, Traits, CharT, Fn>
+  template <class OutputIter, class BiIter, class Traits, class CharT, class Fn>
+  requires regex_replace_fn_constraint<BiIter, Traits, CharT, Fn>
   OutputIter
   // clang-format on
   regex_replace_fn(
-    OutputIter out, BidirectionalIter first, BidirectionalIter last,
-    const std::basic_regex<CharT, Traits>& re, Fn fn,
+    OutputIter out, BiIter first, BiIter last, const std::basic_regex<CharT, Traits>& re, Fn fn,
     std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
-    using Iter = std::regex_iterator<BidirectionalIter, CharT, Traits>;
+    using Iter = std::regex_iterator<BiIter, CharT, Traits>;
     Iter i(first, last, re, flags);
     Iter eof;
     const bool format_copy = !(flags & std::regex_constants::format_no_copy);
@@ -67,7 +91,7 @@ namespace strtpl {
       if (format_copy)
         out = std::copy(first, last, out);
     } else {
-      std::sub_match<BidirectionalIter> lm;
+      std::sub_match<BiIter> lm;
       const bool format_first_only = flags & std::regex_constants::format_first_only;
       for (; i != eof; ++i) {
         if (format_copy)
@@ -97,19 +121,18 @@ namespace strtpl {
 
   // regex_count
 
-  template <class BidirectionalIter, class Traits, class CharT>
+  template <class BiIter, class Traits, class CharT>
   std::pair<std::ptrdiff_t, std::ptrdiff_t>
-  regex_count(BidirectionalIter first, BidirectionalIter last,
-              const std::basic_regex<CharT, Traits>& re,
+  regex_count(BiIter first, BiIter last, const std::basic_regex<CharT, Traits>& re,
               std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
-    using Iter = std::regex_iterator<BidirectionalIter, CharT, Traits>;
+    using Iter = std::regex_iterator<BiIter, CharT, Traits>;
     Iter i(first, last, re, flags);
     Iter eof;
     std::ptrdiff_t n = 0, m = 0;
     if (i == eof) {
       m = std::distance(first, last);
     } else {
-      std::sub_match<BidirectionalIter> lm;
+      std::sub_match<BiIter> lm;
       const bool format_first_only = flags & std::regex_constants::format_first_only;
       for (; i != eof; ++i) {
         ++n;
@@ -159,12 +182,12 @@ namespace strtpl {
     return i == end(map) ? throw std::out_of_range("strtpl::at") : get<1>(*i);
   }
 
-  template <class BidirectionalIter>
+  template <class BiIter>
   void
-  _invalid(BidirectionalIter first, BidirectionalIter last) {
+  _invalid(BiIter first, BiIter last) {
+    using CharT = typename std::iterator_traits<BiIter>::value_type;
     // See https://docs.python.org/ja/3/library/stdtypes.html#str.splitlines
-    const std::basic_regex<typename std::iterator_traits<BidirectionalIter>::value_type> re{
-      R"((\r\n?|[\n\v\f]))"};
+    const std::basic_regex<CharT> re(TYPED_LITERAL(CharT, R"((\r\n?|[\n\v\f]))"));
     const auto [lineno, colno] = regex_count(first, last, re);
     auto msg = "Invalid placeholder in string: line " + std::to_string(lineno + 1) + ", col "
                + std::to_string(colno + 1);
@@ -178,7 +201,7 @@ namespace strtpl {
     std::basic_string_view<CharT> delimiter{};
     std::basic_string_view<CharT> idpattern{};
     std::basic_string_view<CharT> braceidpattern{};
-    const std::basic_string_view<CharT> invalid{"()"};
+    const std::basic_string_view<CharT> invalid{TYPED_LITERAL(CharT, "()")};
     std::regex_constants::match_flag_type flags = std::regex_constants::match_default;
 
     string_template() = default;
@@ -202,10 +225,12 @@ namespace strtpl {
       const std::basic_regex<CharT> re{[this] {
         using namespace hidden_ops::string_view_ops;
         const auto delim = regex_escape(delimiter);
-        const auto escape = "(" + delim + ")";
-        return delim + "(?:" + idpattern + "|\\{" + braceidpattern + "\\}|" + escape + "|" + invalid
-               + ")";
+        const auto escape = TYPED_LITERAL(CharT, "(") + delim + TYPED_LITERAL(CharT, ")");
+        return delim + TYPED_LITERAL(CharT, "(?:") + idpattern + TYPED_LITERAL(CharT, "|\\{")
+               + braceidpattern + TYPED_LITERAL(CharT, "\\}|") + escape + TYPED_LITERAL(CharT, "|")
+               + invalid + TYPED_LITERAL(CharT, ")");
       }()};
+
       const auto convert =
         [&delim = delimiter, first = s.begin(),
          &map](const std::match_results<typename std::basic_string_view<CharT, ST>::iterator>& mo)
@@ -225,6 +250,7 @@ namespace strtpl {
         }
         throw std::runtime_error("Unrecognized group in pattern");
       };
+
       return regex_replace_fn(s, re, convert, flags);
     }
   }; // struct string_template
@@ -232,5 +258,8 @@ namespace strtpl {
   inline namespace cpo {
     // See https://github.com/python/cpython/blob/971343eb569a3418aa9a0bad9b638cccf1470ef8/Lib/string.py#L57
     inline constexpr string_template<char> substitute{"$", "([_a-zA-Z][_a-zA-Z0-9]*)"};
+    inline constexpr string_template<wchar_t> wsubstitute{L"$", L"([_a-zA-Z][_a-zA-Z0-9]*)"};
   } // namespace cpo
+
+#undef TYPED_LITERAL
 } // namespace strtpl
