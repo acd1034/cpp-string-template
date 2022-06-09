@@ -159,6 +159,18 @@ namespace strtpl {
     return i == end(map) ? throw std::out_of_range("strtpl::at") : get<1>(*i);
   }
 
+  template <class BidirectionalIter>
+  void
+  _invalid(BidirectionalIter first, BidirectionalIter last) {
+    // See https://docs.python.org/ja/3/library/stdtypes.html#str.splitlines
+    const std::basic_regex<typename std::iterator_traits<BidirectionalIter>::value_type> re{
+      R"((\r\n?|[\n\v\f]))"};
+    const auto [lineno, colno] = regex_count(first, last, re);
+    auto msg = "Invalid placeholder in string: line " + std::to_string(lineno + 1) + ", col "
+               + std::to_string(colno + 1);
+    throw std::runtime_error(std::move(msg));
+  }
+
   template <class CharT>
   struct string_template {
     using char_type = CharT;
@@ -181,19 +193,6 @@ namespace strtpl {
       : delimiter{delim}, idpattern{id}, braceidpattern{bid}, flags{f} {}
     // clang-format on
 
-  private:
-    template <class BidirectionalIter>
-    static void
-    _invalid(const std::match_results<BidirectionalIter>& mo) {
-      // See https://docs.python.org/ja/3/library/stdtypes.html#str.splitlines
-      const std::basic_regex<CharT> re{R"((\r\n?|[\n\v\f]))"};
-      const auto [lineno, colno] = regex_count(mo.prefix().first, mo.prefix().second, re);
-      const auto msg = "Invalid placeholder in string: line " + std::to_string(lineno + 1)
-                       + ", col " + std::to_string(colno + 1);
-      throw std::runtime_error(msg);
-    }
-
-  public:
     // clang-format off
     template <class ST, class Map>
     requires map_with_key_type<Map, std::basic_string_view<CharT, ST>>
@@ -208,21 +207,21 @@ namespace strtpl {
                + ")";
       }()};
       const auto convert =
-        [this,
+        [&delim = delimiter, first = s.begin(),
          &map](const std::match_results<typename std::basic_string_view<CharT, ST>::iterator>& mo)
         -> std::remove_cvref_t<map_mapped_t<Map, std::basic_string_view<CharT, ST>>> {
         if (mo[1].matched) {
-          std::basic_string_view<CharT, ST> key(mo[1].first,
+          std::basic_string_view<CharT, ST> key(std::to_address(mo[1].first),
                                                 static_cast<std::size_t>(mo[1].length()));
           return at(map, key);
         } else if (mo[2].matched) {
-          std::basic_string_view<CharT, ST> key(mo[2].first,
+          std::basic_string_view<CharT, ST> key(std::to_address(mo[2].first),
                                                 static_cast<std::size_t>(mo[2].length()));
           return at(map, key);
         } else if (mo[3].matched) {
-          return delimiter;
+          return delim;
         } else if (mo[4].matched) {
-          _invalid(mo);
+          _invalid(first, mo.prefix().second);
         }
         throw std::runtime_error("Unrecognized group in pattern");
       };
