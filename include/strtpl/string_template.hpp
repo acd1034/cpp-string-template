@@ -194,30 +194,30 @@ namespace strtpl {
     throw std::runtime_error(std::move(msg));
   }
 
-  template <class CharT>
+  template <class CharT, class ST = std::char_traits<CharT>>
   struct basic_string_template {
     using char_type = CharT;
 
-    std::basic_string_view<CharT> delimiter{};
-    std::basic_string_view<CharT> idpattern{};
-    std::basic_string_view<CharT> braceidpattern{};
-    const std::basic_string_view<CharT> invalid{TYPED_LITERAL(CharT, "()")};
+    std::basic_string_view<CharT, ST> delimiter{};
+    std::basic_string_view<CharT, ST> idpattern{};
+    std::basic_string_view<CharT, ST> braceidpattern{};
+    const std::basic_string_view<CharT, ST> invalid{TYPED_LITERAL(CharT, "()")};
     std::regex_constants::match_flag_type flags = std::regex_constants::match_default;
 
     basic_string_template() = default;
     // clang-format off
-    constexpr basic_string_template(std::basic_string_view<CharT> delim,
-                                    std::basic_string_view<CharT> id)
+    constexpr basic_string_template(std::basic_string_view<CharT, ST> delim,
+                                    std::basic_string_view<CharT, ST> id)
       : delimiter{delim}, idpattern{id}, braceidpattern{id} {}
-    constexpr basic_string_template(std::basic_string_view<CharT> delim,
-                                    std::basic_string_view<CharT> id,
-                                    std::basic_string_view<CharT> bid,
+    constexpr basic_string_template(std::basic_string_view<CharT, ST> delim,
+                                    std::basic_string_view<CharT, ST> id,
+                                    std::basic_string_view<CharT, ST> bid,
                                     std::regex_constants::match_flag_type f = std::regex_constants::match_default)
       : delimiter{delim}, idpattern{id}, braceidpattern{bid}, flags{f} {}
     // clang-format on
 
     // clang-format off
-    template <class ST, class Map>
+    template <class Map>
     requires map_with_key_type<Map, std::basic_string_view<CharT, ST>> and std::convertible_to<
       map_mapped_t<Map, std::basic_string_view<CharT, ST>>, std::basic_string_view<CharT, ST>>
     std::basic_string<CharT, ST>
