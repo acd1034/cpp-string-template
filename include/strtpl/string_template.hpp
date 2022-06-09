@@ -196,14 +196,14 @@ namespace strtpl {
 
   template <class CharT, class ST = std::char_traits<CharT>>
   struct basic_string_template {
-    using char_type = CharT;
-
+  private:
     std::basic_string_view<CharT, ST> delimiter{};
     std::basic_string_view<CharT, ST> idpattern{};
     std::basic_string_view<CharT, ST> braceidpattern{};
     const std::basic_string_view<CharT, ST> invalid{TYPED_LITERAL(CharT, "()")};
     std::regex_constants::match_flag_type flags = std::regex_constants::match_default;
 
+  public:
     basic_string_template() = default;
     // clang-format off
     constexpr basic_string_template(std::basic_string_view<CharT, ST> delim,
