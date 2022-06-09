@@ -11,6 +11,30 @@
 
 namespace strtpl {
 
+  // TYPED_LITERAL
+  // See https://github.com/microsoft/STL/blob/17fde2cbab6e8724d81c9555237c9a623d7fb954/tests/std/tests/P0220R1_string_view/test.cpp#L260-L277
+
+  template <typename CharT>
+  struct choose_literal; // not defined
+
+  template <>
+  struct choose_literal<char> {
+    static constexpr const char*
+    choose(const char* s, const wchar_t*) {
+      return s;
+    }
+  };
+
+  template <>
+  struct choose_literal<wchar_t> {
+    static constexpr const wchar_t*
+    choose(const char*, const wchar_t* s) {
+      return s;
+    }
+  };
+
+#define TYPED_LITERAL(CharT, Literal) (choose_literal<CharT>::choose(Literal, L##Literal))
+
   // match_results_format
 
   template <class BiIter, class Allocator, class OutputIter, class ST>
@@ -231,4 +255,6 @@ namespace strtpl {
     // See https://github.com/python/cpython/blob/971343eb569a3418aa9a0bad9b638cccf1470ef8/Lib/string.py#L57
     inline constexpr string_template<char> substitute{"$", "([_a-zA-Z][_a-zA-Z0-9]*)"};
   } // namespace cpo
+
+#undef TYPED_LITERAL
 } // namespace strtpl
