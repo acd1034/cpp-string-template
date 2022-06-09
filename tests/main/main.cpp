@@ -40,3 +40,21 @@ TEST_CASE("main", "[main]") {
     CHECK_THROWS_AS(strtpl::substitute(s5, map), std::out_of_range);
   }
 }
+
+TEST_CASE("wchar_t", "[main]") {
+  { // wsubstitute
+    std::unordered_map<std::wstring_view, std::wstring_view> map{
+      {L"what", L"example"},
+    };
+    std::wstring_view s1 = L"This is $what.";
+    std::wstring_view s2 = L"This is ${what}ified.";
+    std::wstring_view s3 = L"This is dollar $$.";
+    std::wstring_view s4 = L"This is error $.";
+    std::wstring_view s5 = L"This is error too $which.";
+    CHECK(strtpl::wsubstitute(s1, map) == L"This is example.");
+    CHECK(strtpl::wsubstitute(s2, map) == L"This is exampleified.");
+    CHECK(strtpl::wsubstitute(s3, map) == L"This is dollar $.");
+    CHECK_THROWS_AS(strtpl::wsubstitute(s4, map), std::runtime_error);
+    CHECK_THROWS_AS(strtpl::wsubstitute(s5, map), std::out_of_range);
+  }
+}

@@ -256,6 +256,7 @@ namespace strtpl {
   inline namespace cpo {
     // See https://github.com/python/cpython/blob/971343eb569a3418aa9a0bad9b638cccf1470ef8/Lib/string.py#L57
     inline constexpr string_template<char> substitute{"$", "([_a-zA-Z][_a-zA-Z0-9]*)"};
+    inline constexpr string_template<wchar_t> wsubstitute{L"$", L"([_a-zA-Z][_a-zA-Z0-9]*)"};
   } // namespace cpo
 
 #undef TYPED_LITERAL
