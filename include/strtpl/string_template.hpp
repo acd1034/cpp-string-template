@@ -14,7 +14,7 @@ namespace strtpl {
   // TYPED_LITERAL
   // See https://github.com/microsoft/STL/blob/17fde2cbab6e8724d81c9555237c9a623d7fb954/tests/std/tests/P0220R1_string_view/test.cpp#L260-L277
 
-  template <typename CharT>
+  template <class CharT>
   struct choose_literal; // not defined
 
   template <>
@@ -230,6 +230,7 @@ namespace strtpl {
                + braceidpattern + TYPED_LITERAL(CharT, "\\}|") + escape + TYPED_LITERAL(CharT, "|")
                + invalid + TYPED_LITERAL(CharT, ")");
       }()};
+
       const auto convert =
         [&delim = delimiter, first = s.begin(),
          &map](const std::match_results<typename std::basic_string_view<CharT, ST>::iterator>& mo)
@@ -249,6 +250,7 @@ namespace strtpl {
         }
         throw std::runtime_error("Unrecognized group in pattern");
       };
+
       return regex_replace_fn(s, re, convert, flags);
     }
   }; // struct string_template
