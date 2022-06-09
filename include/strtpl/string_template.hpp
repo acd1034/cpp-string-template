@@ -13,11 +13,11 @@ namespace strtpl {
 
   // match_results_format
 
-  template <class BidirectionalIter, class Allocator, class OutputIter, class ST>
+  template <class BiIter, class Allocator, class OutputIter, class ST>
   OutputIter
   match_results_format(
-    const std::match_results<BidirectionalIter, Allocator>& mo, OutputIter out,
-    std::basic_string_view<typename std::iterator_traits<BidirectionalIter>::value_type, ST> fmt,
+    const std::match_results<BiIter, Allocator>& mo, OutputIter out,
+    std::basic_string_view<typename std::iterator_traits<BiIter>::value_type, ST> fmt,
     std::regex_constants::match_flag_type flags = std::regex_constants::format_default) {
     return mo.format(out, fmt.data(), fmt.data() + fmt.size(), flags);
   }
@@ -44,22 +44,21 @@ namespace strtpl {
   struct is_std_basic_string_view_with_char_type<std::basic_string_view<CharT, ST>, CharT>
     : std::true_type {};
 
-  template <class BidirectionalIter, class Traits, class CharT, class Fn>
-  inline constexpr bool regex_replace_fn_constraint = std::conjunction_v<
-    std::is_invocable<Fn&, const std::match_results<BidirectionalIter>&>,
-    is_std_basic_string_view_with_char_type<
-      std::invoke_result_t<Fn&, const std::match_results<BidirectionalIter>&>, CharT>>;
+  template <class BiIter, class Traits, class CharT, class Fn>
+  inline constexpr bool regex_replace_fn_constraint =
+    std::conjunction_v<std::is_invocable<Fn&, const std::match_results<BiIter>&>,
+                       is_std_basic_string_view_with_char_type<
+                         std::invoke_result_t<Fn&, const std::match_results<BiIter>&>, CharT>>;
 
   // clang-format off
-  template <class OutputIter, class BidirectionalIter, class Traits, class CharT, class Fn>
-  requires regex_replace_fn_constraint<BidirectionalIter, Traits, CharT, Fn>
+  template <class OutputIter, class BiIter, class Traits, class CharT, class Fn>
+  requires regex_replace_fn_constraint<BiIter, Traits, CharT, Fn>
   OutputIter
   // clang-format on
   regex_replace_fn(
-    OutputIter out, BidirectionalIter first, BidirectionalIter last,
-    const std::basic_regex<CharT, Traits>& re, Fn fn,
+    OutputIter out, BiIter first, BiIter last, const std::basic_regex<CharT, Traits>& re, Fn fn,
     std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
-    using Iter = std::regex_iterator<BidirectionalIter, CharT, Traits>;
+    using Iter = std::regex_iterator<BiIter, CharT, Traits>;
     Iter i(first, last, re, flags);
     Iter eof;
     const bool format_copy = !(flags & std::regex_constants::format_no_copy);
@@ -67,7 +66,7 @@ namespace strtpl {
       if (format_copy)
         out = std::copy(first, last, out);
     } else {
-      std::sub_match<BidirectionalIter> lm;
+      std::sub_match<BiIter> lm;
       const bool format_first_only = flags & std::regex_constants::format_first_only;
       for (; i != eof; ++i) {
         if (format_copy)
@@ -97,19 +96,18 @@ namespace strtpl {
 
   // regex_count
 
-  template <class BidirectionalIter, class Traits, class CharT>
+  template <class BiIter, class Traits, class CharT>
   std::pair<std::ptrdiff_t, std::ptrdiff_t>
-  regex_count(BidirectionalIter first, BidirectionalIter last,
-              const std::basic_regex<CharT, Traits>& re,
+  regex_count(BiIter first, BiIter last, const std::basic_regex<CharT, Traits>& re,
               std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
-    using Iter = std::regex_iterator<BidirectionalIter, CharT, Traits>;
+    using Iter = std::regex_iterator<BiIter, CharT, Traits>;
     Iter i(first, last, re, flags);
     Iter eof;
     std::ptrdiff_t n = 0, m = 0;
     if (i == eof) {
       m = std::distance(first, last);
     } else {
-      std::sub_match<BidirectionalIter> lm;
+      std::sub_match<BiIter> lm;
       const bool format_first_only = flags & std::regex_constants::format_first_only;
       for (; i != eof; ++i) {
         ++n;
@@ -159,11 +157,11 @@ namespace strtpl {
     return i == end(map) ? throw std::out_of_range("strtpl::at") : get<1>(*i);
   }
 
-  template <class BidirectionalIter>
+  template <class BiIter>
   void
-  _invalid(BidirectionalIter first, BidirectionalIter last) {
+  _invalid(BiIter first, BiIter last) {
     // See https://docs.python.org/ja/3/library/stdtypes.html#str.splitlines
-    const std::basic_regex<typename std::iterator_traits<BidirectionalIter>::value_type> re{
+    const std::basic_regex<typename std::iterator_traits<BiIter>::value_type> re{
       R"((\r\n?|[\n\v\f]))"};
     const auto [lineno, colno] = regex_count(first, last, re);
     auto msg = "Invalid placeholder in string: line " + std::to_string(lineno + 1) + ", col "
