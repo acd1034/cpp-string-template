@@ -216,9 +216,11 @@ namespace strtpl {
       : delimiter{delim}, idpattern{id}, braceidpattern{bid}, flags{f} {}
     // clang-format on
 
-    // clang-format of
+    // clang-format off
     template <class ST, class Map>
-    requires map_with_key_type<Map, std::basic_string_view<CharT, ST>> std::basic_string<CharT, ST>
+    requires map_with_key_type<Map, std::basic_string_view<CharT, ST>> and std::convertible_to<
+      map_mapped_t<Map, std::basic_string_view<CharT, ST>>, std::basic_string_view<CharT, ST>>
+    std::basic_string<CharT, ST>
     // clang-format on
     operator()(std::basic_string_view<CharT, ST> s, const Map& map) const {
       const std::basic_regex<CharT> re{[this] {
@@ -230,20 +232,19 @@ namespace strtpl {
                + invalid + TYPED_LITERAL(CharT, ")");
       }()};
 
-      const auto convert =
-        [&delim = delimiter, first = s.begin(),
-         &map](const std::match_results<typename std::basic_string_view<CharT, ST>::iterator>& mo)
-        -> std::remove_cvref_t<map_mapped_t<Map, std::basic_string_view<CharT, ST>>> {
+      using string_view_type = std::basic_string_view<CharT, ST>;
+      const auto convert = [&delim = delimiter, first = s.begin(), &map](
+                             const std::match_results<typename string_view_type::iterator>& mo) {
         if (mo[1].matched) {
-          std::basic_string_view<CharT, ST> key(std::to_address(mo[1].first),
-                                                static_cast<std::size_t>(mo[1].length()));
-          return at(map, key);
+          string_view_type key(std::to_address(mo[1].first),
+                               static_cast<std::size_t>(mo[1].length()));
+          return string_view_type(at(map, key));
         } else if (mo[2].matched) {
-          std::basic_string_view<CharT, ST> key(std::to_address(mo[2].first),
-                                                static_cast<std::size_t>(mo[2].length()));
-          return at(map, key);
+          string_view_type key(std::to_address(mo[2].first),
+                               static_cast<std::size_t>(mo[2].length()));
+          return string_view_type(at(map, key));
         } else if (mo[3].matched) {
-          return delim;
+          return string_view_type(delim.data(), delim.length());
         } else if (mo[4].matched) {
           _invalid(first, mo.prefix().second);
         }
