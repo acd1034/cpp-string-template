@@ -54,7 +54,7 @@ namespace strtpl {
                std::regex_constants::match_flag_type flags = std::regex_constants::match_default) {
     std::basic_string<CharT, ST> r;
     // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
-    const std::basic_regex<CharT> re{R"([.*+?^${}()|[\]\\])"};
+    const std::basic_regex<CharT> re(TYPED_LITERAL(CharT, R"([.*+?^${}()|[\]\\])"));
     std::regex_replace(std::back_inserter(r), s.begin(), s.end(), re, "\\$&", flags);
     return r;
   }
@@ -184,9 +184,9 @@ namespace strtpl {
   template <class BiIter>
   void
   _invalid(BiIter first, BiIter last) {
+    using CharT = typename std::iterator_traits<BiIter>::value_type;
     // See https://docs.python.org/ja/3/library/stdtypes.html#str.splitlines
-    const std::basic_regex<typename std::iterator_traits<BiIter>::value_type> re{
-      R"((\r\n?|[\n\v\f]))"};
+    const std::basic_regex<CharT> re(TYPED_LITERAL(CharT, R"((\r\n?|[\n\v\f]))"));
     const auto [lineno, colno] = regex_count(first, last, re);
     auto msg = "Invalid placeholder in string: line " + std::to_string(lineno + 1) + ", col "
                + std::to_string(colno + 1);
