@@ -212,11 +212,11 @@ namespace strtpl {
          &map](const std::match_results<typename std::basic_string_view<CharT, ST>::iterator>& mo)
         -> std::remove_cvref_t<map_mapped_t<Map, std::basic_string_view<CharT, ST>>> {
         if (mo[1].matched) {
-          std::basic_string_view<CharT, ST> key(mo[1].first,
+          std::basic_string_view<CharT, ST> key(std::to_address(mo[1].first),
                                                 static_cast<std::size_t>(mo[1].length()));
           return at(map, key);
         } else if (mo[2].matched) {
-          std::basic_string_view<CharT, ST> key(mo[2].first,
+          std::basic_string_view<CharT, ST> key(std::to_address(mo[2].first),
                                                 static_cast<std::size_t>(mo[2].length()));
           return at(map, key);
         } else if (mo[3].matched) {
