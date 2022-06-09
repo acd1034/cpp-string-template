@@ -195,7 +195,7 @@ namespace strtpl {
   }
 
   template <class CharT>
-  struct string_template {
+  struct basic_string_template {
     using char_type = CharT;
 
     std::basic_string_view<CharT> delimiter{};
@@ -204,22 +204,21 @@ namespace strtpl {
     const std::basic_string_view<CharT> invalid{TYPED_LITERAL(CharT, "()")};
     std::regex_constants::match_flag_type flags = std::regex_constants::match_default;
 
-    string_template() = default;
+    basic_string_template() = default;
     // clang-format off
-    constexpr string_template(std::basic_string_view<CharT> delim,
-                              std::basic_string_view<CharT> id)
+    constexpr basic_string_template(std::basic_string_view<CharT> delim,
+                                    std::basic_string_view<CharT> id)
       : delimiter{delim}, idpattern{id}, braceidpattern{id} {}
-    constexpr string_template(std::basic_string_view<CharT> delim,
-                              std::basic_string_view<CharT> id,
-                              std::basic_string_view<CharT> bid,
-                              std::regex_constants::match_flag_type f = std::regex_constants::match_default)
+    constexpr basic_string_template(std::basic_string_view<CharT> delim,
+                                    std::basic_string_view<CharT> id,
+                                    std::basic_string_view<CharT> bid,
+                                    std::regex_constants::match_flag_type f = std::regex_constants::match_default)
       : delimiter{delim}, idpattern{id}, braceidpattern{bid}, flags{f} {}
     // clang-format on
 
-    // clang-format off
+    // clang-format of
     template <class ST, class Map>
-    requires map_with_key_type<Map, std::basic_string_view<CharT, ST>>
-    std::basic_string<CharT, ST>
+    requires map_with_key_type<Map, std::basic_string_view<CharT, ST>> std::basic_string<CharT, ST>
     // clang-format on
     operator()(std::basic_string_view<CharT, ST> s, const Map& map) const {
       const std::basic_regex<CharT> re{[this] {
@@ -253,12 +252,15 @@ namespace strtpl {
 
       return regex_replace_fn(s, re, convert, flags);
     }
-  }; // struct string_template
+  }; // struct basic_string_template
+
+  using string_template = basic_string_template<char>;
+  using wstring_template = basic_string_template<wchar_t>;
 
   inline namespace cpo {
     // See https://github.com/python/cpython/blob/971343eb569a3418aa9a0bad9b638cccf1470ef8/Lib/string.py#L57
-    inline constexpr string_template<char> substitute{"$", "([_a-zA-Z][_a-zA-Z0-9]*)"};
-    inline constexpr string_template<wchar_t> wsubstitute{L"$", L"([_a-zA-Z][_a-zA-Z0-9]*)"};
+    inline constexpr string_template substitute{"$", "([_a-zA-Z][_a-zA-Z0-9]*)"};
+    inline constexpr wstring_template wsubstitute{L"$", L"([_a-zA-Z][_a-zA-Z0-9]*)"};
   } // namespace cpo
 
 #undef TYPED_LITERAL
