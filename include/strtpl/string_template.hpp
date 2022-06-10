@@ -194,31 +194,32 @@ namespace strtpl {
     throw std::runtime_error(std::move(msg));
   }
 
-  template <class CharT>
-  struct string_template {
-    using char_type = CharT;
-
-    std::basic_string_view<CharT> delimiter{};
-    std::basic_string_view<CharT> idpattern{};
-    std::basic_string_view<CharT> braceidpattern{};
-    const std::basic_string_view<CharT> invalid{TYPED_LITERAL(CharT, "()")};
+  template <class CharT, class ST = std::char_traits<CharT>>
+  struct basic_string_template {
+  private:
+    std::basic_string_view<CharT, ST> delimiter{};
+    std::basic_string_view<CharT, ST> idpattern{};
+    std::basic_string_view<CharT, ST> braceidpattern{};
+    const std::basic_string_view<CharT, ST> invalid{TYPED_LITERAL(CharT, "()")};
     std::regex_constants::match_flag_type flags = std::regex_constants::match_default;
 
-    string_template() = default;
+  public:
+    basic_string_template() = default;
     // clang-format off
-    constexpr string_template(std::basic_string_view<CharT> delim,
-                              std::basic_string_view<CharT> id)
+    constexpr basic_string_template(std::basic_string_view<CharT, ST> delim,
+                                    std::basic_string_view<CharT, ST> id)
       : delimiter{delim}, idpattern{id}, braceidpattern{id} {}
-    constexpr string_template(std::basic_string_view<CharT> delim,
-                              std::basic_string_view<CharT> id,
-                              std::basic_string_view<CharT> bid,
-                              std::regex_constants::match_flag_type f = std::regex_constants::match_default)
+    constexpr basic_string_template(std::basic_string_view<CharT, ST> delim,
+                                    std::basic_string_view<CharT, ST> id,
+                                    std::basic_string_view<CharT, ST> bid,
+                                    std::regex_constants::match_flag_type f = std::regex_constants::match_default)
       : delimiter{delim}, idpattern{id}, braceidpattern{bid}, flags{f} {}
     // clang-format on
 
     // clang-format off
-    template <class ST, class Map>
-    requires map_with_key_type<Map, std::basic_string_view<CharT, ST>>
+    template <class Map>
+    requires map_with_key_type<Map, std::basic_string_view<CharT, ST>> and std::convertible_to<
+      map_mapped_t<Map, std::basic_string_view<CharT, ST>>, std::basic_string_view<CharT, ST>>
     std::basic_string<CharT, ST>
     // clang-format on
     operator()(std::basic_string_view<CharT, ST> s, const Map& map) const {
@@ -231,20 +232,19 @@ namespace strtpl {
                + invalid + TYPED_LITERAL(CharT, ")");
       }()};
 
-      const auto convert =
-        [&delim = delimiter, first = s.begin(),
-         &map](const std::match_results<typename std::basic_string_view<CharT, ST>::iterator>& mo)
-        -> std::remove_cvref_t<map_mapped_t<Map, std::basic_string_view<CharT, ST>>> {
+      using string_view_type = std::basic_string_view<CharT, ST>;
+      const auto convert = [&delim = delimiter, first = s.begin(), &map](
+                             const std::match_results<typename string_view_type::iterator>& mo) {
         if (mo[1].matched) {
-          std::basic_string_view<CharT, ST> key(std::to_address(mo[1].first),
-                                                static_cast<std::size_t>(mo[1].length()));
-          return at(map, key);
+          string_view_type key(std::to_address(mo[1].first),
+                               static_cast<std::size_t>(mo[1].length()));
+          return string_view_type(at(map, key));
         } else if (mo[2].matched) {
-          std::basic_string_view<CharT, ST> key(std::to_address(mo[2].first),
-                                                static_cast<std::size_t>(mo[2].length()));
-          return at(map, key);
+          string_view_type key(std::to_address(mo[2].first),
+                               static_cast<std::size_t>(mo[2].length()));
+          return string_view_type(at(map, key));
         } else if (mo[3].matched) {
-          return delim;
+          return string_view_type(delim.data(), delim.length());
         } else if (mo[4].matched) {
           _invalid(first, mo.prefix().second);
         }
@@ -253,12 +253,15 @@ namespace strtpl {
 
       return regex_replace_fn(s, re, convert, flags);
     }
-  }; // struct string_template
+  }; // struct basic_string_template
+
+  using string_template = basic_string_template<char>;
+  using wstring_template = basic_string_template<wchar_t>;
 
   inline namespace cpo {
     // See https://github.com/python/cpython/blob/971343eb569a3418aa9a0bad9b638cccf1470ef8/Lib/string.py#L57
-    inline constexpr string_template<char> substitute{"$", "([_a-zA-Z][_a-zA-Z0-9]*)"};
-    inline constexpr string_template<wchar_t> wsubstitute{L"$", L"([_a-zA-Z][_a-zA-Z0-9]*)"};
+    inline constexpr string_template substitute{"$", "([_a-zA-Z][_a-zA-Z0-9]*)"};
+    inline constexpr wstring_template wsubstitute{L"$", L"([_a-zA-Z][_a-zA-Z0-9]*)"};
   } // namespace cpo
 
 #undef TYPED_LITERAL
