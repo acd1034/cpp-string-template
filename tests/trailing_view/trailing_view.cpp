@@ -172,6 +172,25 @@ TEST_CASE("trailing_view", "[trailing_view]") {
   }
 }
 
+TEST_CASE("trailing_view unreachable", "[trailing_view][unreachable]") {
+  {
+    std::vector<int> v{0, 1, 2, 3};
+    auto tv = strtpl::trailing_view(v);
+    auto it = std::ranges::begin(tv);
+    for (const auto& y : v) {
+      const auto& [x, last] = *it++;
+      CHECK(x == y);
+      CHECK(last == 0);
+    }
+    for (std::ptrdiff_t i = 1; i < 10; ++i) {
+      const auto& [x, last] = *it++;
+      CHECK(x == v.back());
+      CHECK(last == i);
+    }
+    CHECK(it != std::ranges::end(tv));
+  }
+}
+
 TEST_CASE("trailing_view generators", "[trailing_view][generators]") {
   // clang-format off
   const auto v = GENERATE(
