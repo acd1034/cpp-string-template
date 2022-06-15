@@ -1,16 +1,23 @@
 /// @file trailing_view.hpp
-#include <iterator> // std::iterator_traits
+#include <concepts> // std::semiregular
+#include <iterator> // std::iterator_traits, std::unreachable_sentinel_t
 #include <ranges>
 #include <type_traits>
 #include <utility>
 
 namespace strtpl {
-  template <std::ranges::input_range View>
+  template <class T, class U>
+  concept different_from = !std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
+
+  // clang-format off
+  template <std::ranges::input_range View, std::semiregular Bound = std::unreachable_sentinel_t>
   requires std::ranges::view<View>
-  struct trailing_view : std::ranges::view_interface<trailing_view<View>> {
+    and (std::convertible_to<Bound, std::ranges::range_difference_t<View>> or std::same_as<Bound, std::unreachable_sentinel_t>)
+  struct trailing_view : std::ranges::view_interface<trailing_view<View, Bound>> {
+    // clang-format on
   private:
     [[no_unique_address]] View base_ = View();
-    std::ranges::range_difference_t<View> count_ = 0;
+    Bound bound_ = Bound();
 
     template <bool Const>
     class iterator;
@@ -18,9 +25,10 @@ namespace strtpl {
   public:
     trailing_view() requires std::default_initializable<View>
     = default;
-    constexpr trailing_view(View base, std::ranges::range_difference_t<View> count)
-      : base_(std::move(base)), count_(std::move(count)) {
-      assert(count_ >= 0);
+    constexpr trailing_view(View base) : base_(std::move(base)) {}
+    constexpr trailing_view(View base, Bound bound)
+      : base_(std::move(base)), bound_(std::move(bound)) {
+      assert(bound_ >= 0);
     }
 
     constexpr View
@@ -31,9 +39,9 @@ namespace strtpl {
     base() && {
       return std::move(base_);
     }
-    constexpr std::ranges::range_difference_t<View>
+    constexpr Bound
     count() const noexcept {
-      return count_;
+      return bound_;
     }
 
     constexpr iterator<false>
@@ -50,37 +58,43 @@ namespace strtpl {
       return std::default_sentinel;
     }
     constexpr iterator<false>
-    end() requires std::ranges::common_range<View> {
-      return {*this, std::ranges::end(base_), count_};
+    end() requires
+      std::ranges::common_range<View> and different_from<Bound, std::unreachable_sentinel_t> {
+      return {*this, std::ranges::end(base_), bound_};
     }
     constexpr auto
     end() const requires std::ranges::input_range<const View> {
       return std::default_sentinel;
     }
     constexpr iterator<true>
-    end() const requires
-      std::ranges::input_range<const View> and std::ranges::common_range<const View> {
-      return {*this, std::ranges::end(base_), count_};
+    end() const requires std::ranges::input_range<const View> and std::ranges::common_range<
+      const View> and different_from<Bound, std::unreachable_sentinel_t> {
+      return {*this, std::ranges::end(base_), bound_};
     }
 
     constexpr auto
-    size() requires std::ranges::sized_range<View> {
-      return std::ranges::empty(base_)
-               ? 0
-               : std::ranges::size(base_) + static_cast<std::ranges::range_size_t<View>>(count_)
-                   - 1;
+    size() requires
+      std::ranges::sized_range<View> and different_from<Bound, std::unreachable_sentinel_t> {
+      using Size = std::ranges::range_size_t<View>;
+      if (std::ranges::empty(base_))
+        return static_cast<Size>(0);
+      return std::ranges::size(base_) + static_cast<Size>(bound_) - 1;
     }
     constexpr auto
-    size() const requires std::ranges::sized_range<const View> {
-      return std::ranges::empty(base_)
-               ? 0
-               : std::ranges::size(base_)
-                   + static_cast<std::ranges::range_size_t<const View>>(count_) - 1;
+    size() const requires
+      std::ranges::sized_range<const View> and different_from<Bound, std::unreachable_sentinel_t> {
+      using Size = std::ranges::range_size_t<const View>;
+      if (std::ranges::empty(base_))
+        return static_cast<Size>(0);
+      return std::ranges::size(base_) + static_cast<Size>(bound_) - 1;
     }
   };
 
-  template <class Range, class DifferenceType>
-  trailing_view(Range&&, DifferenceType) -> trailing_view<std::views::all_t<Range>>;
+  template <class Range>
+  trailing_view(Range&&) -> trailing_view<std::views::all_t<Range>>;
+
+  template <class Range, class Bound>
+  trailing_view(Range&&, Bound) -> trailing_view<std::views::all_t<Range>, Bound>;
 
   template <class View>
   struct trailing_iterator_category {};
@@ -96,11 +110,14 @@ namespace strtpl {
     // clang-format on
   };
 
-  template <std::ranges::input_range View>
+  // clang-format off
+  template <std::ranges::input_range View, std::semiregular Bound>
   requires std::ranges::view<View>
+    and (std::convertible_to<Bound, std::ranges::range_difference_t<View>> or std::same_as<Bound, std::unreachable_sentinel_t>)
   template <bool Const>
-  struct trailing_view<View>::iterator
+  struct trailing_view<View, Bound>::iterator
     : trailing_iterator_category<std::conditional_t<Const, const View, View>> {
+    // clang-format on
   private:
     using Parent = std::conditional_t<Const, const trailing_view, trailing_view>;
     using Base = std::conditional_t<Const, const View, View>;
@@ -112,8 +129,9 @@ namespace strtpl {
 
     constexpr bool
     accessible() const noexcept {
-      return next_ != std::ranges::end(parent_->base())
-             or (not std::ranges::empty(parent_->base()) and ncount_ < parent_->count());
+      if (std::ranges::empty(parent_->base()))
+        return false;
+      return next_ != std::ranges::end(parent_->base()) or ncount_ != parent_->count();
     }
 
   public:
@@ -203,14 +221,16 @@ namespace strtpl {
     friend constexpr bool
     operator==(const iterator& x,
                const iterator& y) requires std::equality_comparable<std::ranges::iterator_t<Base>> {
-      return x.next_ == y.next_
-             and (std::ranges::empty(x.parent_->base()) or x.ncount_ == y.ncount_);
+      if (std::ranges::empty(x.parent_->base()) and std::ranges::empty(y.parent_->base()))
+        return true;
+      return x.next_ == y.next_ and x.ncount_ == y.ncount_;
     }
     friend constexpr bool
     operator==(const iterator& x, std::default_sentinel_t) requires
       std::equality_comparable<std::ranges::iterator_t<Base>> {
-      return x.next_ == std::ranges::end(x.parent_->base())
-             and (std::ranges::empty(x.parent_->base()) or x.ncount_ == x.parent_->count());
+      if (std::ranges::empty(x.parent_->base()))
+        return true;
+      return x.next_ == std::ranges::end(x.parent_->base()) and x.ncount_ == x.parent_->count();
     }
 
     friend constexpr std::pair<std::ranges::range_rvalue_reference_t<Base>,
