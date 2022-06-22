@@ -72,6 +72,6 @@ FetchContent_Declare(Catch2
   GIT_TAG        v3.0.1)
 FetchContent_MakeAvailable(Catch2)
 
-add_subdirectory(main)
 add_subdirectory(regex)
+add_subdirectory(string_template)
 add_subdirectory(trailing_view)
