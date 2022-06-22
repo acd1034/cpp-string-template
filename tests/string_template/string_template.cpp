@@ -1,6 +1,4 @@
-#define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
-
+#include <catch2/catch_test_macros.hpp>
 #include <string_view>
 #include <unordered_map>
 #include <strtpl/string_template.hpp>

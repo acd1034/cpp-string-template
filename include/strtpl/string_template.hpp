@@ -179,7 +179,7 @@ namespace strtpl {
   at(Map& map, const Key& key) {
     auto i = map.find(key);
     using std::end;
-    return i == end(map) ? throw std::out_of_range("strtpl::at") : get<1>(*i);
+    return i == end(map) ? throw std::out_of_range("strtpl::at: index out of range") : get<1>(*i);
   }
 
   template <class BiIter>

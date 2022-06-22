@@ -1,8 +1,3 @@
-# String Template in C++
-[![Linux build status](https://github.com/acd1034/cpp-string-template/actions/workflows/linux-build.yml/badge.svg)](https://github.com/acd1034/cpp-string-template/actions/workflows/linux-build.yml)
-
-## Quick example
-```cpp
 #include <iostream>
 #include <string_view>
 #include <unordered_map>
@@ -37,11 +32,3 @@ int main() {
     // → Invalid placeholder in string: line 1, col 12
   }
 }
-```
-
-## Note
-- [`include/strtpl/string_template.hpp`](https://github.com/acd1034/cpp-string-template/blob/main/include/strtpl/string_template.hpp)
-  → 文字列置換を行う関数 (`strtpl::substitute` および `wchar_t` に対応した `strtpl::wsubstitute`) が実装されています。
-- [`include/strtpl/regex.hpp`](https://github.com/acd1034/cpp-string-template/blob/main/include/strtpl/regex.hpp),
-  [`include/strtpl/trailing_view.hpp`](https://github.com/acd1034/cpp-string-template/blob/main/include/strtpl/trailing_view.hpp)
-  → std の正規表現ライブラリを range のように扱うためのモジュールで、まだ試験実装です。
