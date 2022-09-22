@@ -12,8 +12,8 @@
 #include <unordered_map>
 #include <strtpl/string_template.hpp>
 
-void substitute_test(std::string_view str,
-                     const std::unordered_map<std::string_view, std::string_view>& map) {
+template <class Map>
+void substitute_test(std::string_view str, const Map& map) {
   try {
     std::cout << strtpl::substitute(str, map) << std::endl;
   } catch (const std::exception& e) {
@@ -40,7 +40,8 @@ int main() {
   substitute_test("$who likes $where.", map);
   // output: Error: key not found
 
-  // '$' に続く文字が無効な場合も、例外を送出します。エラーメッセージにはエラーが生じた文字の行番号と列番号を含みます。
+  // '$' に続く文字が無効な場合も、例外を送出します。
+  // エラーメッセージにはエラーが生じた文字の行番号と列番号が含まれます。
   substitute_test("$who likes $.", map);
   // output: Invalid placeholder in string: line 1, col 12
 }
